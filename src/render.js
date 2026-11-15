@@ -46,10 +46,10 @@ function layout({ title, description, path, body, robots, script = false }) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(pageTitle)}</title>
   <meta name="description" content="${escapeHtml(desc)}">
-  <meta name="theme-color" content="#05070c">
+  <meta name="theme-color" content="#070a14">
   ${robots ? `<meta name="robots" content="${escapeHtml(robots)}">` : ""}
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="preload" href="/fonts/big-shoulders-display-800.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/barlow-condensed-800-italic.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -62,6 +62,7 @@ function layout({ title, description, path, body, robots, script = false }) {
   </header>
   <main id="content">${body}</main>
   <footer class="site-footer">
+    <img class="footer-rule" src="/art/wave-rule.svg" alt="">
     <div class="wrap footer-bar">
       <p>Hosted by ${escapeHtml(EVENT.hosts.join(" and "))}.</p>
       <p>${escapeHtml(EVENT.dateLabel)}, ${EVENT.start}–${EVENT.end}, ${escapeHtml(EVENT.venue)}, ${escapeHtml(EVENT.city)}.</p>
@@ -71,29 +72,6 @@ function layout({ title, description, path, body, robots, script = false }) {
   ${script ? '<script src="/form.js" defer></script>' : ""}
 </body>
 </html>`;
-}
-
-function globeSvg() {
-  return `<svg viewBox="0 0 200 200" fill="none" aria-hidden="true">
-    <circle cx="100" cy="100" r="78" stroke="currentColor" stroke-width="1.25"/>
-    <ellipse cx="100" cy="100" rx="78" ry="26" stroke="currentColor" stroke-width="1.1"/>
-    <ellipse cx="100" cy="100" rx="78" ry="50" stroke="currentColor" stroke-width="1"/>
-    <ellipse cx="100" cy="64" rx="64" ry="15" stroke="currentColor" stroke-width="1"/>
-    <ellipse cx="100" cy="136" rx="64" ry="15" stroke="currentColor" stroke-width="1"/>
-    <ellipse cx="100" cy="44" rx="40" ry="8" stroke="currentColor" stroke-width="1"/>
-    <ellipse cx="100" cy="156" rx="40" ry="8" stroke="currentColor" stroke-width="1"/>
-    <ellipse cx="100" cy="100" rx="16" ry="78" stroke="currentColor" stroke-width="1"/>
-    <ellipse cx="100" cy="100" rx="38" ry="78" stroke="currentColor" stroke-width="1"/>
-    <ellipse cx="100" cy="100" rx="58" ry="78" stroke="currentColor" stroke-width="1"/>
-  </svg>`;
-}
-
-function waveSvg() {
-  return `<svg viewBox="0 0 440 150" fill="none" aria-hidden="true">
-    <path d="M-8 96c30 0 30-40 60-40s30 40 60 40 30-54 60-54 30 54 60 54 30-58 60-58 30 44 60 44 30-30 60-30" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M-8 116c30 0 30-30 60-30s30 30 60 30 30-44 60-44 30 44 60 44 30-38 60-38 30 34 60 34 30-24 60-24" stroke="currentColor" stroke-width="1.2" opacity="0.75"/>
-    <path d="M-8 74c26 0 24-32 52-32s28 32 54 32 26-46 54-46 28 36 54 36 24-40 52-40 30 28 56 28 26-22 52-22" stroke="currentColor" stroke-width="1.2"/>
-  </svg>`;
 }
 
 function errorSummary(errors) {
@@ -220,73 +198,76 @@ export function renderHome() {
     .join("");
 
   const body = `<section class="hero">
-      <div class="halftone" aria-hidden="true"></div>
-      <div class="wave" aria-hidden="true">${waveSvg()}</div>
-      <div class="globe globe-a" aria-hidden="true">${globeSvg()}</div>
-      <div class="globe globe-b" aria-hidden="true">${globeSvg()}</div>
-      <div class="wrap hero-copy">
-        <p class="kicker">${escapeHtml(EVENT.dateLabel)}</p>
-        <h1 class="hero-title" id="event-title">
-          <span>Innovation</span>
-          <span>Galway ×</span>
-          <span>ElevenLabs</span>
-        </h1>
-        <p class="tagline">${escapeHtml(EVENT.tagline)}</p>
-        <p class="lede">${escapeHtml(EVENT.line)}</p>
-        <p class="when"><time datetime="${EVENT.dateISO}T10:00">10:00</time>–<time datetime="${EVENT.dateISO}T18:00">18:00</time> · ${escapeHtml(EVENT.venue)}, ${escapeHtml(EVENT.city)}</p>
-        <div class="actions">
-          <a class="button" href="/signup">Sign up</a>
-          <a class="button secondary" href="/submit">Submit a project</a>
+      <img class="hero-globe" src="/art/globe-inked.svg" alt="">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <h1 class="hero-title" id="event-title">
+            <span>Innovation</span>
+            <span>Galway <span class="x">×</span></span>
+            <span>ElevenLabs</span>
+          </h1>
+          <p class="tagline"><span>${escapeHtml(EVENT.tagline)}</span></p>
+          <p class="lede">${escapeHtml(EVENT.line)} One day of building things that talk, listen and help, at ${escapeHtml(EVENT.venue)} in ${escapeHtml(EVENT.city)}.</p>
+          <p class="when"><time datetime="${EVENT.dateISO}">${escapeHtml(EVENT.dateLabel)}</time><span aria-hidden="true"> · </span><time datetime="${EVENT.dateISO}T10:00">10am</time> to <time datetime="${EVENT.dateISO}T18:00">6pm</time><span aria-hidden="true"> · </span>${escapeHtml(EVENT.venue)}, ${escapeHtml(EVENT.city)}</p>
+          <div class="actions">
+            <a class="button" href="/signup">Sign up, it's free</a>
+            <a class="button secondary" href="/submit">Submit your project</a>
+          </div>
+          <p class="facts">Free to attend. ElevenLabs credits for every participant. Main prizes TBA.</p>
         </div>
-        <p class="facts">Free to attend. ElevenLabs credits for every participant. Main prizes TBA.</p>
+        <div class="hero-art" aria-hidden="true">
+          <img class="hooker" src="/art/hooker-sticker.svg" alt="" width="720" height="600">
+          <img class="sticker sticker-age" src="/art/sticker-under19.svg" alt="" width="220" height="220">
+          <img class="sticker sticker-free" src="/art/sticker-free.svg" alt="" width="220" height="220">
+          <img class="note" src="/art/note-credits.svg" alt="" width="420" height="200">
+        </div>
       </div>
     </section>
-    <section class="section" id="challenge">
-      <div class="wrap section-grid">
-        <p class="kicker">The brief</p>
-        <div class="prose">
+    <section class="section paper" id="challenge">
+      <div class="wrap brief">
+        <div class="brief-head">
           <h2>${escapeHtml(EVENT.challenge)}</h2>
+          <img class="brief-art" src="/art/voice-bubble.svg" alt="" width="360" height="300">
+        </div>
+        <div class="prose">
           <p>A one-day hackathon at ${escapeHtml(EVENT.venue)}, ${escapeHtml(EVENT.city)}. Free for students aged 19 and under. Hosted by ${escapeHtml(EVENT.hosts.join(" and "))}.</p>
-          <p>Everyone who takes part gets free ElevenLabs credits. Main prizes are TBA. The day runs from 10am to 6pm on ${escapeHtml(EVENT.dateLabel)}.</p>
+          <p>Everyone who takes part gets free ElevenLabs credits, so your project can speak, listen, translate or sing. Main prizes are TBA. The day runs from 10am to 6pm on ${escapeHtml(EVENT.dateLabel)}.</p>
+          <h3>Stuck for an idea? Steal one</h3>
+          <ul class="ideas">
+            <li>A study buddy that quizzes you out loud before the Leaving Cert.</li>
+            <li>An audio guide to Galway, told in the voices of the people who live here.</li>
+            <li>A game where the characters actually talk back.</li>
+            <li>A tool that helps someone who finds it hard to speak up in class.</li>
+          </ul>
         </div>
       </div>
     </section>
     <section class="section" id="schedule">
-      <div class="wrap section-grid">
-        <p class="kicker">The day</p>
-        <div>
-          <h2>Saturday, 10am to 6pm</h2>
-          <ol class="day">
-            <li><time datetime="${EVENT.dateISO}T10:00">10:00</time><p>Start, at ${escapeHtml(EVENT.venue)}.</p></li>
-            <li><time class="tba">TBA</time><p><strong>Schedule TBA.</strong> The programme between the start and the end is not set yet.</p></li>
-            <li><time datetime="${EVENT.dateISO}T18:00">18:00</time><p>End.</p></li>
-          </ol>
-        </div>
+      <div class="wrap split">
+        <h2>Saturday, 10am to 6pm</h2>
+        <ol class="day">
+          <li><time datetime="${EVENT.dateISO}T10:00">10:00</time><p>Start, at ${escapeHtml(EVENT.venue)}.</p></li>
+          <li><time class="tba">TBA</time><p><strong>Schedule TBA.</strong> The programme between the start and the end is not set yet.</p></li>
+          <li><time datetime="${EVENT.dateISO}T18:00">18:00</time><p>End.</p></li>
+        </ol>
       </div>
     </section>
-    <section class="section" id="partners">
-      <div class="wrap section-grid">
-        <p class="kicker">With</p>
-        <div>
-          <h2>Partners</h2>
-          <ul class="partners">${partners}</ul>
-        </div>
+    <section class="section paper" id="partners">
+      <div class="wrap split">
+        <h2>Made possible by</h2>
+        <ul class="partners">${partners}</ul>
       </div>
     </section>
     <section class="section" id="faq">
-      <div class="wrap section-grid">
-        <p class="kicker">Questions</p>
-        <div>
-          <h2>Before you come</h2>
-          <div class="faq">${faqHtml}</div>
-        </div>
+      <div class="wrap split">
+        <h2>Before you come</h2>
+        <div class="faq">${faqHtml}</div>
       </div>
     </section>
     <section class="section" id="location">
-      <div class="wrap section-grid">
-        <p class="kicker">The room</p>
-        <div>
-          <h2>${escapeHtml(EVENT.venue)}</h2>
+      <div class="wrap split">
+        <h2>Find us at ${escapeHtml(EVENT.venue)}</h2>
+        <div class="where">
           <address>
             ${escapeHtml(EVENT.street)}<br>
             ${escapeHtml(EVENT.city)}<br>
@@ -313,7 +294,7 @@ function formShell({ path, title, lede, form }) {
       <div class="form-intro">
         <h1>${escapeHtml(title)}</h1>
         ${lede}
-        <div class="intro-globe" aria-hidden="true">${globeSvg()}</div>
+        <img class="intro-art" src="/art/voice-bubble.svg" alt="" width="360" height="300">
       </div>
       ${form}
     </div>`,
@@ -351,7 +332,7 @@ export function renderSignup({ values, errors = [], formError = "" }) {
         <span>I agree to being photographed at the event, and to the organisers using those photos to document the hackathon.</span>
       </label>
     </fieldset>
-    <button class="button" type="submit">Sign up</button>
+    <button class="button" type="submit">Sign me up</button>
   </form>`;
 
   return formShell({
@@ -420,7 +401,7 @@ export function renderSubmit({ values, errors = [], formError = "" }) {
       ${field({ id: "zip", name: "zip", label: "Postcode", value: values.zip, autocomplete: "postal-code", error: err("zip"), maxlength: 120 })}
       ${field({ id: "country", name: "country", label: "Country", value: values.country, autocomplete: "country-name", error: err("country"), maxlength: 120 })}
     </details>
-    <button class="button" type="submit">Submit project</button>
+    <button class="button" type="submit">Send in my project</button>
   </form>`;
 
   return formShell({
