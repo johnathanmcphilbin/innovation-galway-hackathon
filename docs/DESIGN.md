@@ -57,7 +57,16 @@ Text on colour is always solid ink or solid paper. There are no alpha-tinted tex
 
 **Schedule (night).** On desktop a sticky H2 sits on the left, with the time list on the right. Times are in yellow display italic, and TBA is in blue.
 
-**Partners (paper).** "Made possible by". Names run in a wrapping row of display italic for now. **Replace each name with the partner's real logo file, in single-colour ink.** Get them from Eve and Cristian, the ElevenLabs brand kit, and Innovation Ireland, PorterShed and IdeasLab. Don't redraw or approximate any logo.
+**Partners (paper).** "Made possible by". Logos are the organisations' own files, self-hosted under `public/art/partners`, at their original aspect ratios. IdeasLab does not publish a logo, so that name stays as type.
+
+| Partner | File | Source |
+| --- | --- | --- |
+| Innovation Galway | `innovation-ireland.png` (the Innovation Ireland mark) | https://www.innovationireland.org/img/brand/mark.png |
+| ElevenLabs | `elevenlabs.svg` (official black logo) | https://elevenlabs.io/brand and https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-black.svg |
+| IdeasLab | none | No logo file on https://www.universityofgalway.ie/ideaslab/ or the university brand pages. The name stays as text. |
+| PorterShed | `portershed.png` (official red logo, transparent) | https://portershed.com/wp-content/uploads/2022/10/PorterShed-Red-Logo.png |
+
+**Hack Club flag.** Official Orpheus flag, self-hosted at `public/art/flag-orpheus-top.svg`, from https://assets.hackclub.com/flag-orpheus-top.svg (https://hackclub.com/brand). It hangs from the top-left and links to https://hackclub.com.
 
 **FAQ (night).** Sticky H2 on the left, and the questions on the right as 22px sentence-case rows. A yellow "+" turns into "×" when a row is open. The native triangle marker is gone.
 

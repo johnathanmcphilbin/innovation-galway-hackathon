@@ -54,6 +54,9 @@ function layout({ title, description, path, body, robots, script = false }) {
 </head>
 <body>
   <a class="skip" href="#content">Skip to content</a>
+  <a class="hackclub-flag" href="https://hackclub.com">
+    <img src="/art/flag-orpheus-top.svg" alt="Hack Club" width="280" height="158">
+  </a>
   <header class="site-header">
     <div class="wrap header-bar">
       <a class="wordmark" href="/">Innovation Galway <span aria-hidden="true">×</span> ElevenLabs</a>
@@ -149,12 +152,13 @@ function shirtField(value, error) {
 
 export function renderHome() {
   const partners = EVENT.partners
-    .map(
-      (partner) =>
-        `<li><span>${escapeHtml(partner.name)}</span>${
-          partner.note ? `<small>${escapeHtml(partner.note)}</small>` : ""
-        }</li>`,
-    )
+    .map((partner) => {
+      const mark = partner.logo
+        ? `<img class="partner-logo" src="${escapeHtml(partner.logo)}" alt="${escapeHtml(partner.name)}" width="${partner.logoWidth}" height="${partner.logoHeight}">`
+        : `<span class="partner-name">${escapeHtml(partner.name)}</span>`;
+      const note = partner.note ? `<small>${escapeHtml(partner.note)}</small>` : "";
+      return `<li>${mark}${note}</li>`;
+    })
     .join("");
 
   const faqs = [
