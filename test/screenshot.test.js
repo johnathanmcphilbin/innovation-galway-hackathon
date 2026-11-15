@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { detectImage, inspectScreenshot, MAX_SCREENSHOT_BYTES } from "../src/screenshot.js";
+import { detectImage, imageBytes, inspectScreenshot, MAX_SCREENSHOT_BYTES } from "../src/screenshot.js";
 
 const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
@@ -31,6 +31,12 @@ test("rejects a screenshot that is empty, the wrong type, or over 5 MB", () => {
   const rejected = inspectScreenshot({ buffer: huge, originalname: "a.png" });
   assert.equal(rejected.ok, false);
   assert.match(rejected.error, /5 MB/);
+});
+
+test("turns a hex or JSON bytea dump back into the PNG bytes", () => {
+  assert.deepEqual(imageBytes(PNG), PNG);
+  assert.deepEqual(imageBytes(`\\x${PNG.toString("hex")}`), PNG);
+  assert.deepEqual(imageBytes(JSON.stringify({ type: "Buffer", data: [...PNG] })), PNG);
 });
 
 test("keeps a safe filename and the detected type", () => {

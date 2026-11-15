@@ -115,10 +115,24 @@ test("submit stays local, review is authenticated, approve pushes once, reject n
     assert.match(detailHtml, /2008-04-02/);
     assert.match(detailHtml, /15 Market St/);
 
+    assert.match(detailHtml, /Open screenshot/);
+    assert.match(detailHtml, /Delete submission/);
+    assert.match(detailHtml, /data-confirm=/);
+    assert.match(detailHtml, /href="\/admin\/submissions\/1\/screenshot"/);
+
     const image = await fetch(`${base}/admin/submissions/1/screenshot`, { headers: authed });
     assert.equal(image.status, 200);
     assert.equal(image.headers.get("content-type"), "image/png");
+    assert.equal(image.headers.get("etag"), null);
     assert.match(image.headers.get("cache-control"), /no-store/);
+    assert.doesNotMatch(image.headers.get("cache-control"), /immutable/);
+    assert.deepEqual(Buffer.from(await image.arrayBuffer()), PNG);
+    const revalidated = await fetch(`${base}/admin/submissions/1/screenshot`, {
+      headers: { ...authed, "if-none-match": 'W/"stale"' },
+    });
+    assert.equal(revalidated.status, 200);
+    assert.equal(revalidated.headers.get("content-type"), "image/png");
+    assert.deepEqual(Buffer.from(await revalidated.arrayBuffer()), PNG);
 
     const other = await fetch(`${base}/submit`, {
       method: "POST",
@@ -127,6 +141,10 @@ test("submit stays local, review is authenticated, approve pushes once, reject n
     });
     assert.equal(other.status, 303);
     assert.equal(calls.length, 0);
+    const urlDetail = await fetch(`${base}/admin/submissions/2`, { headers: authed });
+    const urlHtml = await urlDetail.text();
+    assert.match(urlHtml, /src="https:\/\/images\.example\.com\/shot\.png"/);
+    assert.match(urlHtml, />Open screenshot</);
 
     const rejected = await fetch(`${base}/admin/submissions/2`, {
       method: "POST",
@@ -237,6 +255,34 @@ test("submit stays local, review is authenticated, approve pushes once, reject n
     });
     assert.equal(tooBig.status, 422);
     assert.match(await tooBig.text(), /5 MB/);
+    assert.equal(calls.length, 2);
+
+    const anonymousDelete = await fetch(`${base}/admin/submissions/1/delete`, {
+      method: "POST",
+      redirect: "manual",
+      headers: { origin: base },
+    });
+    assert.equal(anonymousDelete.status, 401);
+    assert.equal((await getSubmission(1)).status, "approved");
+    assert.equal(calls.length, 2);
+
+    const foreignDelete = await fetch(`${base}/admin/submissions/1/delete`, {
+      method: "POST",
+      redirect: "manual",
+      headers: { ...authed, origin: "https://evil.example" },
+    });
+    assert.equal(foreignDelete.status, 403);
+    assert.ok(await getSubmission(1));
+    assert.equal(calls.length, 2);
+
+    const removed = await fetch(`${base}/admin/submissions/1/delete`, {
+      method: "POST",
+      redirect: "manual",
+      headers: { ...authed, origin: base },
+    });
+    assert.equal(removed.status, 303);
+    assert.equal(new URL(removed.headers.get("location"), base).pathname, "/admin");
+    assert.equal(await getSubmission(1), null);
     assert.equal(calls.length, 2);
   } finally {
     setAirtableFetchForTests(null);

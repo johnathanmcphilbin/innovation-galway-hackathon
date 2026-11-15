@@ -6,6 +6,7 @@ import { adminCookieValue, isAdminRequest, passwordMatches } from "./auth.js";
 import { pushApprovedSubmission } from "./airtable.js";
 import {
   closePool,
+  deleteSubmission,
   getScreenshot,
   getSubmission,
   insertSubmission,
@@ -179,6 +180,10 @@ function submissionId(raw) {
 
 function adminPage(req, res) {
   res.set("Cache-Control", "no-store");
+  res.set(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https:; font-src 'self'; form-action 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+  );
   if (!isAdminRequest(req)) {
     res.status(req.method === "GET" ? 200 : 401).type("html").send(renderAdminLogin({}));
     return false;
@@ -210,23 +215,51 @@ app.get(
   }),
 );
 
+function sameOriginPost(req) {
+  const host = req.get("host");
+  if (!host) return false;
+  const origin = req.get("origin");
+  if (origin) {
+    try {
+      return new URL(origin).host === host;
+    } catch {
+      return false;
+    }
+  }
+  const referer = req.get("referer");
+  if (!referer) return false;
+  try {
+    return new URL(referer).host === host;
+  } catch {
+    return false;
+  }
+}
+
 app.get(
   "/admin/submissions/:id/screenshot",
   asyncRoute(async (req, res) => {
-    res.set("Cache-Control", "private, no-store");
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Vary", "Cookie");
     if (!isAdminRequest(req)) {
-      res.status(401).type("text/plain").send("Sign in required.");
+      res.status(401).setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.end("Sign in required.");
       return;
     }
     const id = submissionId(req.params.id);
     const shot = id ? await getScreenshot(id) : null;
-    if (!shot || !/^image\/(png|jpeg|webp|gif)$/.test(shot.contentType || "")) {
-      res.status(404).type("text/plain").send("No screenshot.");
+    if (!shot || !Buffer.isBuffer(shot.bytes) || !/^image\/(png|jpeg|webp|gif)$/.test(shot.contentType || "")) {
+      res.status(404).setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.end("No screenshot.");
       return;
     }
-    res.set("Content-Type", shot.contentType);
-    res.set("X-Content-Type-Options", "nosniff");
-    res.send(shot.bytes);
+    const filename = String(shot.filename || "screenshot").replace(/["\r\n]/g, "");
+    res.status(200);
+    res.setHeader("Content-Type", shot.contentType);
+    res.setHeader("Content-Length", String(shot.bytes.length));
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+    res.end(shot.bytes);
   }),
 );
 
@@ -248,6 +281,38 @@ app.get(
       return;
     }
     res.type("html").send(renderAdminDetail({ submission, review: prefillReview(submission) }));
+  }),
+);
+
+app.post(
+  "/admin/submissions/:id/delete",
+  asyncRoute(async (req, res) => {
+    if (!adminPage(req, res)) return;
+    if (!sameOriginPost(req)) {
+      res.status(403).type("html").send(
+        renderStatus({
+          title: "Not allowed",
+          heading: "That delete request did not come from this site.",
+          text: "Go back to the submission and use the delete button.",
+          path: "/admin",
+        }),
+      );
+      return;
+    }
+    const id = submissionId(req.params.id);
+    const removed = id ? await deleteSubmission(id) : false;
+    if (!removed) {
+      res.status(404).type("html").send(
+        renderStatus({
+          title: "Not found",
+          heading: "That submission is not in the list.",
+          text: "Go back to the review list.",
+          path: "/admin",
+        }),
+      );
+      return;
+    }
+    res.redirect(303, "/admin");
   }),
 );
 

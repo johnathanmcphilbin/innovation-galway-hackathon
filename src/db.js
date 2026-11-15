@@ -1,4 +1,5 @@
 import pg from "pg";
+import { imageBytes } from "./screenshot.js";
 
 pg.types.setTypeParser(1082, (value) => value);
 
@@ -240,7 +241,7 @@ function mapSubmission(row, { includeBytes = false } = {}) {
     screenshotContentType: row.screenshot_content_type,
     screenshotFilename: row.screenshot_filename,
     screenshotUploaded: row.screenshot_uploaded,
-    screenshotBytes: includeBytes ? row.screenshot_bytes : undefined,
+    screenshotBytes: includeBytes ? imageBytes(row.screenshot_bytes) : undefined,
     description: row.description,
     teamMembers: row.team_members,
     elevenLabsUse: row.elevenlabs_use,
@@ -358,12 +359,19 @@ export async function getScreenshot(id) {
     [id],
   );
   const row = result.rows[0];
-  if (!row?.screenshot_bytes) return null;
+  const bytes = imageBytes(row?.screenshot_bytes);
+  if (!bytes || bytes.length === 0) return null;
   return {
-    bytes: row.screenshot_bytes,
+    bytes,
     contentType: row.screenshot_content_type,
     filename: row.screenshot_filename,
   };
+}
+
+export async function deleteSubmission(id) {
+  const active = await requirePool();
+  const result = await active.query(`DELETE FROM submissions WHERE id = $1`, [id]);
+  return result.rowCount > 0;
 }
 
 export async function saveReview(id, review) {

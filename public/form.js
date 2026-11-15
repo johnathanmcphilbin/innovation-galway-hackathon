@@ -8,6 +8,19 @@ function restore(button) {
   if (button.dataset.label) button.textContent = button.dataset.label;
 }
 
+document.querySelectorAll("form[data-confirm]").forEach((form) => {
+  form.addEventListener(
+    "submit",
+    (event) => {
+      if (!window.confirm(form.getAttribute("data-confirm"))) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    },
+    true,
+  );
+});
+
 document.querySelectorAll("form").forEach((form) => {
   form.addEventListener("submit", () => {
     const button = form.querySelector('button[type="submit"]');
