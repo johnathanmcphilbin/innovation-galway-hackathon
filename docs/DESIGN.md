@@ -57,14 +57,14 @@ Text on colour is always solid ink or solid paper. There are no alpha-tinted tex
 
 **Schedule (night).** On desktop a sticky H2 sits on the left, with the time list on the right. Times are in yellow display italic, and TBA is in blue.
 
-**Partners (paper).** "Made possible by". Logos are the organisations' own files, self-hosted under `public/art/partners`, at their original aspect ratios. IdeasLab does not publish a logo, so that name stays as type.
+**Partners (paper).** "Made possible by". One horizontal row on desktop, a 2×2 grid on small screens. Every mark is the same height and rendered in one ink colour (`filter: brightness(0)`) so none of them dominates. IdeasLab has no logo file, so the name is set in the same display italic.
 
 | Partner | File | Source |
 | --- | --- | --- |
-| Innovation Galway | `innovation-ireland.png` (the Innovation Ireland mark) | https://www.innovationireland.org/img/brand/mark.png |
+| Innovation Galway | `innovation-ireland.png` (the mark, cropped to the artwork) shown beside "Innovation Ireland" | https://www.innovationireland.org/img/brand/mark.png |
 | ElevenLabs | `elevenlabs.svg` (official black logo) | https://elevenlabs.io/brand and https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-black.svg |
 | IdeasLab | none | No logo file on https://www.universityofgalway.ie/ideaslab/ or the university brand pages. The name stays as text. |
-| PorterShed | `portershed.png` (official red logo, transparent) | https://portershed.com/wp-content/uploads/2022/10/PorterShed-Red-Logo.png |
+| PorterShed | `portershed.png` (official logo with the `#supportedbyAIB` tagline cropped off; the wordmark and icon remain) | https://portershed.com/wp-content/uploads/2022/10/PorterShed-Red-Logo.png |
 
 **Hack Club flag.** Official Orpheus flag, self-hosted at `public/art/flag-orpheus-top.svg`, from https://assets.hackclub.com/flag-orpheus-top.svg (https://hackclub.com/brand). It hangs from the top-left and links to https://hackclub.com.
 

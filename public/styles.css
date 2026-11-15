@@ -573,32 +573,53 @@ a:hover {
   font-weight: 600;
 }
 
-/* partner logos keep their own colours and aspect ratios */
+/* one ink for every partner mark, on the paper ground */
+
+.partners-block h2 {
+  margin-bottom: 1.75rem;
+}
 
 .partners {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.75rem 2.75rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.75rem 1rem;
   align-items: center;
+  justify-items: center;
 }
 
 .partners li {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
+  align-items: center;
+  justify-content: center;
   margin: 0;
+  min-height: 3rem;
+  max-width: 100%;
 }
 
-.partner-logo {
+.partner-lockup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  max-width: 100%;
+}
+
+.partner-logo,
+.partner-mark {
   display: block;
   width: auto;
-  height: auto;
-  max-height: 3.6rem;
-  max-width: min(18rem, 72vw);
+  height: 2.5rem;
+  max-width: 100%;
+  object-fit: contain;
+  filter: brightness(0);
+}
+
+.partner-mark {
+  height: 2.35rem;
+  flex: none;
 }
 
 .partner-name {
@@ -606,9 +627,16 @@ a:hover {
   font-weight: 800;
   font-style: italic;
   text-transform: uppercase;
-  font-size: clamp(1.8rem, 3.6vw, 2.6rem);
-  line-height: 0.95;
+  font-size: 1.85rem;
+  line-height: 0.9;
   color: var(--ink);
+  letter-spacing: 0.01em;
+}
+
+.partner-lockup .partner-name {
+  font-size: 1.35rem;
+  line-height: 0.86;
+  text-align: left;
 }
 
 .partners small {
@@ -1125,6 +1153,33 @@ th {
   .hero-grid {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
     gap: 3rem;
+  }
+}
+
+@media (min-width: 800px) {
+  .partners {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.25rem 2rem;
+  }
+
+  .partner-logo {
+    height: 3rem;
+    max-width: none;
+  }
+
+  .partner-mark {
+    height: 2.85rem;
+  }
+
+  .partner-name {
+    font-size: 2.35rem;
+  }
+
+  .partner-lockup .partner-name {
+    font-size: 2.05rem;
   }
 }
 

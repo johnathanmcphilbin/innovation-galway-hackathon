@@ -22,8 +22,8 @@ export const EVENT = {
       name: "Innovation Galway",
       note: "Innovation Ireland",
       logo: "/art/partners/innovation-ireland.png",
-      logoWidth: 240,
-      logoHeight: 220,
+      logoWidth: 114,
+      logoHeight: 186,
     },
     {
       name: "ElevenLabs",
@@ -35,8 +35,8 @@ export const EVENT = {
     {
       name: "PorterShed",
       logo: "/art/partners/portershed.png",
-      logoWidth: 1920,
-      logoHeight: 500,
+      logoWidth: 1892,
+      logoHeight: 407,
     },
   ],
   airtableBaseId: "appInkJZdtOT67t8l",

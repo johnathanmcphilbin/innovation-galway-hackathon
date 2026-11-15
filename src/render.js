@@ -137,11 +137,13 @@ function field({
 export function renderHome() {
   const partners = EVENT.partners
     .map((partner) => {
-      const mark = partner.logo
-        ? `<img class="partner-logo" src="${escapeHtml(partner.logo)}" alt="${escapeHtml(partner.name)}" width="${partner.logoWidth}" height="${partner.logoHeight}">`
-        : `<span class="partner-name">${escapeHtml(partner.name)}</span>`;
-      const note = partner.note ? `<small>${escapeHtml(partner.note)}</small>` : "";
-      return `<li>${mark}${note}</li>`;
+      if (partner.logo && partner.note) {
+        return `<li><span class="partner-lockup"><img class="partner-mark" src="${escapeHtml(partner.logo)}" alt="" width="${partner.logoWidth}" height="${partner.logoHeight}"><span class="partner-name">${escapeHtml(partner.note)}</span></span></li>`;
+      }
+      if (partner.logo) {
+        return `<li><img class="partner-logo" src="${escapeHtml(partner.logo)}" alt="${escapeHtml(partner.name)}" width="${partner.logoWidth}" height="${partner.logoHeight}"></li>`;
+      }
+      return `<li><span class="partner-name">${escapeHtml(partner.name)}</span></li>`;
     })
     .join("");
 
@@ -232,7 +234,7 @@ export function renderHome() {
       </div>
     </section>
     <section class="section paper" id="partners">
-      <div class="wrap split">
+      <div class="wrap partners-block">
         <h2>Made possible by</h2>
         <ul class="partners">${partners}</ul>
       </div>
