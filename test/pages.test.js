@@ -60,7 +60,12 @@ test("public pages render the event and the forms", async () => {
     const port = server.address().port;
     const get = async (path) => {
       const response = await fetch(`http://127.0.0.1:${port}${path}`);
-      return { status: response.status, html: await response.text(), type: response.headers.get("content-type") };
+      return {
+        status: response.status,
+        html: await response.text(),
+        type: response.headers.get("content-type"),
+        cache: response.headers.get("cache-control") || "",
+      };
     };
 
     const home = await get("/");
@@ -71,14 +76,21 @@ test("public pages render the event and the forms", async () => {
     assert.match(home.html, /Building for the youth/);
     assert.match(home.html, /A hackathon for students, by students/);
     assert.match(home.html, /How can technology create better opportunities and experiences for young people/);
-    assert.match(home.html, /Schedule TBA/);
+    assert.match(home.html, /How to ship your project/);
+    assert.match(home.html, /Write the README yourself/);
+    assert.match(home.html, /docs\.github\.com\/en\/repositories\/creating-and-managing-repositories\/creating-a-new-repository/);
+    assert.match(home.html, /adding-locally-hosted-code-to-github/);
+    assert.match(home.html, /creating-a-github-pages-site/);
+    assert.match(home.html, /vercel\.com\/docs\/getting-started-with-vercel/);
+    assert.match(home.html, /elevenlabs\.io\/docs\/eleven-api\/quickstart/);
     assert.match(home.html, /PorterShed/);
-    assert.match(home.html, /H91 TCX3/);
     assert.match(home.html, /Eve Kennedy/);
     assert.match(home.html, /Cristian Rotariu/);
     assert.match(home.html, /IdeasLab/);
-    assert.match(home.html, /free ElevenLabs credits/i);
     assert.match(home.html, /Send in my project/);
+    assert.doesNotMatch(home.html, /Schedule TBA/);
+    assert.doesNotMatch(home.html, /Before you come/);
+    assert.doesNotMatch(home.html, /Find us at/);
     assert.doesNotMatch(home.html, /href="\/signup"/);
     assert.doesNotMatch(home.html, /sign up/i);
     assert.doesNotMatch(home.html, /slack/i);
@@ -129,9 +141,20 @@ test("public pages render the event and the forms", async () => {
     assert.match(admin.html, /noindex/);
     assert.doesNotMatch(admin.html, /export\.csv/);
 
+    assert.match(home.html, /styles\.css\?v=[0-9a-f]{12}/);
+    assert.match(home.html, /portershed-wordmark\.png\?v=[0-9a-f]{12}/);
+    const version = home.html.match(/styles\.css\?v=([0-9a-f]{12})/)[1];
+
     const css = await get("/styles.css");
     assert.equal(css.status, 200);
     assert.match(css.type, /css/);
+    assert.match(css.cache, /max-age=0/);
+    assert.match(css.cache, /must-revalidate/);
+    assert.doesNotMatch(css.cache, /immutable/);
+
+    const versioned = await fetch(`http://127.0.0.1:${port}/styles.css?v=${version}`);
+    assert.equal(versioned.status, 200);
+    assert.match(versioned.headers.get("cache-control"), /immutable/);
   } finally {
     server.close();
     await once(server, "close");

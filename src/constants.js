@@ -34,7 +34,7 @@ export const EVENT = {
     { name: "IdeasLab" },
     {
       name: "PorterShed",
-      logo: "/art/partners/portershed.png",
+      logo: "/art/partners/portershed-wordmark.png",
       logoWidth: 1892,
       logoHeight: 407,
     },
