@@ -10,7 +10,7 @@ Node 22, Express, server-rendered HTML, and `pg`. One process. `npm start` liste
 
 ## Pages
 
-- `/` event page: challenge, schedule (marked TBA), partners, FAQ, location
+- `/` submission page: challenge, how to ship the project, partners
 - `/submit` project submission, written to Airtable
 - `/admin` password gate and a link to review submissions in Airtable. `ADMIN_PASSWORD` protects it.
 

@@ -64,7 +64,7 @@ Text on colour is always solid ink or solid paper. There are no alpha-tinted tex
 | Innovation Galway | `innovation-ireland.png` (the mark, cropped to the artwork) shown beside "Innovation Ireland" | https://www.innovationireland.org/img/brand/mark.png |
 | ElevenLabs | `elevenlabs.svg` (official black logo) | https://elevenlabs.io/brand and https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-black.svg |
 | IdeasLab | none | No logo file on https://www.universityofgalway.ie/ideaslab/ or the university brand pages. The name stays as text. |
-| PorterShed | `portershed.png` (official logo with the `#supportedbyAIB` tagline cropped off; the wordmark and icon remain) | https://portershed.com/wp-content/uploads/2022/10/PorterShed-Red-Logo.png |
+| PorterShed | `portershed-wordmark.png` (official logo with the `#supportedbyAIB` tagline cropped off; the wordmark and icon remain) | https://portershed.com/wp-content/uploads/2022/10/PorterShed-Red-Logo.png |
 
 **Hack Club flag.** Official Orpheus flag, self-hosted at `public/art/flag-orpheus-top.svg`, from https://assets.hackclub.com/flag-orpheus-top.svg (https://hackclub.com/brand). It hangs from the top-left and links to https://hackclub.com.
 

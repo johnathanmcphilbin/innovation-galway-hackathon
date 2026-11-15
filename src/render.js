@@ -1,3 +1,4 @@
+import { asset } from "./assets.js";
 import { EVENT, airtableReviewUrl } from "./constants.js";
 
 export function escapeHtml(value) {
@@ -15,10 +16,8 @@ function errorFor(errors, field) {
 
 const NAV = [
   ["/#challenge", "Challenge"],
-  ["/#schedule", "Schedule"],
+  ["/#guides", "Guides"],
   ["/#partners", "Partners"],
-  ["/#faq", "FAQ"],
-  ["/#location", "Location"],
   ["/submit", "Submit"],
 ];
 
@@ -28,7 +27,7 @@ function layout({ title, description, path, body, robots, script = false }) {
     : `${title} · Innovation Galway × ElevenLabs`;
   const desc =
     description ||
-    "A hackathon for students, by students. Saturday 21 November 2026, 10am to 6pm, PorterShed, Galway.";
+    "Send in your Innovation Galway × ElevenLabs project. You need a GitHub link and a page someone can open.";
   const nav = NAV.map(([href, label]) => {
     const current =
       !href.startsWith("/#") && (path === href || path.startsWith(`${href}/`))
@@ -47,13 +46,13 @@ function layout({ title, description, path, body, robots, script = false }) {
   <meta name="theme-color" content="#070a14">
   ${robots ? `<meta name="robots" content="${escapeHtml(robots)}">` : ""}
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="preload" href="/fonts/barlow-condensed-800-italic.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="preload" href="${asset("/fonts/barlow-condensed-800-italic.woff2")}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="${asset("/styles.css")}">
 </head>
 <body>
   <a class="skip" href="#content">Skip to content</a>
   <a class="hackclub-flag" href="https://hackclub.com">
-    <img src="/art/flag-orpheus-top.svg" alt="Hack Club" width="280" height="158">
+    <img src="${asset("/art/flag-orpheus-top.svg")}" alt="Hack Club" width="280" height="158">
   </a>
   <header class="site-header">
     <div class="wrap header-bar">
@@ -63,14 +62,14 @@ function layout({ title, description, path, body, robots, script = false }) {
   </header>
   <main id="content">${body}</main>
   <footer class="site-footer">
-    <img class="footer-rule" src="/art/wave-rule.svg" alt="">
+    <img class="footer-rule" src="${asset("/art/wave-rule.svg")}" alt="">
     <div class="wrap footer-bar">
       <p>Hosted by ${escapeHtml(EVENT.hosts.join(" and "))}.</p>
       <p>${escapeHtml(EVENT.dateLabel)}, ${EVENT.start}–${EVENT.end}, ${escapeHtml(EVENT.venue)}, ${escapeHtml(EVENT.city)}.</p>
       <p><a href="/admin">Admin</a></p>
     </div>
   </footer>
-  ${script ? '<script src="/form.js" defer></script>' : ""}
+  ${script ? `<script src="${asset("/form.js")}" defer></script>` : ""}
 </body>
 </html>`;
 }
@@ -138,49 +137,17 @@ export function renderHome() {
   const partners = EVENT.partners
     .map((partner) => {
       if (partner.logo && partner.note) {
-        return `<li><span class="partner-lockup"><img class="partner-mark" src="${escapeHtml(partner.logo)}" alt="" width="${partner.logoWidth}" height="${partner.logoHeight}"><span class="partner-name">${escapeHtml(partner.note)}</span></span></li>`;
+        return `<li><span class="partner-lockup"><img class="partner-mark" src="${escapeHtml(asset(partner.logo))}" alt="" width="${partner.logoWidth}" height="${partner.logoHeight}"><span class="partner-name">${escapeHtml(partner.note)}</span></span></li>`;
       }
       if (partner.logo) {
-        return `<li><img class="partner-logo" src="${escapeHtml(partner.logo)}" alt="${escapeHtml(partner.name)}" width="${partner.logoWidth}" height="${partner.logoHeight}"></li>`;
+        return `<li><img class="partner-logo" src="${escapeHtml(asset(partner.logo))}" alt="${escapeHtml(partner.name)}" width="${partner.logoWidth}" height="${partner.logoHeight}"></li>`;
       }
       return `<li><span class="partner-name">${escapeHtml(partner.name)}</span></li>`;
     })
     .join("");
 
-  const faqs = [
-    ["Who is it for?", "Students aged 19 and under."],
-    [
-      "Does it cost anything?",
-      "No. It is free to attend. Every participant gets free ElevenLabs credits.",
-    ],
-    [
-      "When and where?",
-      `${EVENT.dateLabel}, 10am to 6pm, at ${EVENT.venue}, ${EVENT.street}, ${EVENT.city}, ${EVENT.eircode}.`,
-    ],
-    ["What is the challenge?", EVENT.challenge],
-    ["What are the prizes?", "Main prizes are TBA."],
-    [
-      "Who is running it?",
-      `Hosted by ${EVENT.hosts.join(" and ")}, with Innovation Galway (Innovation Ireland), ElevenLabs, IdeasLab, and PorterShed.`,
-    ],
-    [
-      "How do I submit a project?",
-      "Use the submit page. You will need a code link, a playable link, a hosted screenshot link, and a description that includes your team, how you used ElevenLabs, and how the project helps young people.",
-    ],
-    [
-      "Where is the schedule?",
-      "The day runs from 10am to 6pm. The session-by-session schedule is TBA.",
-    ],
-  ];
-  const faqHtml = faqs
-    .map(
-      ([question, answer]) =>
-        `<details><summary>${escapeHtml(question)}</summary><p>${escapeHtml(answer)}</p></details>`,
-    )
-    .join("");
-
   const body = `<section class="hero">
-      <img class="hero-globe" src="/art/globe-inked.svg" alt="">
+      <img class="hero-globe" src="${asset("/art/globe-inked.svg")}" alt="">
       <div class="wrap hero-grid">
         <div class="hero-copy">
           <h1 class="hero-title" id="event-title">
@@ -189,18 +156,15 @@ export function renderHome() {
             <span>ElevenLabs</span>
           </h1>
           <p class="tagline"><span>${escapeHtml(EVENT.tagline)}</span></p>
-          <p class="lede">${escapeHtml(EVENT.line)} One day of building things that talk, listen and help, at ${escapeHtml(EVENT.venue)} in ${escapeHtml(EVENT.city)}.</p>
-          <p class="when"><time datetime="${EVENT.dateISO}">${escapeHtml(EVENT.dateLabel)}</time><span aria-hidden="true"> · </span><time datetime="${EVENT.dateISO}T10:00">10am</time> to <time datetime="${EVENT.dateISO}T18:00">6pm</time><span aria-hidden="true"> · </span>${escapeHtml(EVENT.venue)}, ${escapeHtml(EVENT.city)}</p>
+          <p class="lede">${escapeHtml(EVENT.line)} Ship it when the code is on GitHub and someone can open the project in a browser.</p>
           <div class="actions">
             <a class="button" href="/submit">Send in my project</a>
           </div>
-          <p class="facts">Free to attend. ElevenLabs credits for every participant. Main prizes TBA.</p>
         </div>
         <div class="hero-art" aria-hidden="true">
-          <img class="hooker" src="/art/hooker-sticker.svg" alt="" width="720" height="600">
-          <img class="sticker sticker-age" src="/art/sticker-under19.svg" alt="" width="220" height="220">
-          <img class="sticker sticker-free" src="/art/sticker-free.svg" alt="" width="220" height="220">
-          <img class="note" src="/art/note-credits.svg" alt="" width="420" height="200">
+          <img class="hooker" src="${asset("/art/hooker-sticker.svg")}" alt="" width="720" height="600">
+          <img class="sticker sticker-age" src="${asset("/art/sticker-under19.svg")}" alt="" width="220" height="220">
+          <img class="note" src="${asset("/art/note-credits.svg")}" alt="" width="420" height="200">
         </div>
       </div>
     </section>
@@ -208,11 +172,9 @@ export function renderHome() {
       <div class="wrap brief">
         <div class="brief-head">
           <h2>${escapeHtml(EVENT.challenge)}</h2>
-          <img class="brief-art" src="/art/voice-bubble.svg" alt="" width="360" height="300">
+          <img class="brief-art" src="${asset("/art/voice-bubble.svg")}" alt="" width="360" height="300">
         </div>
         <div class="prose">
-          <p>A one-day hackathon at ${escapeHtml(EVENT.venue)}, ${escapeHtml(EVENT.city)}. Free for students aged 19 and under. Hosted by ${escapeHtml(EVENT.hosts.join(" and "))}.</p>
-          <p>Everyone who takes part gets free ElevenLabs credits, so your project can speak, listen, translate or sing. Main prizes are TBA. The day runs from 10am to 6pm on ${escapeHtml(EVENT.dateLabel)}.</p>
           <h3>Stuck for an idea? Steal one</h3>
           <ul class="ideas">
             <li>A study buddy that quizzes you out loud before the Leaving Cert.</li>
@@ -223,14 +185,49 @@ export function renderHome() {
         </div>
       </div>
     </section>
-    <section class="section" id="schedule">
+    <section class="section" id="guides">
       <div class="wrap split">
-        <h2>Saturday, 10am to 6pm</h2>
-        <ol class="day">
-          <li><time datetime="${EVENT.dateISO}T10:00">10:00</time><p>Start, at ${escapeHtml(EVENT.venue)}.</p></li>
-          <li><time class="tba">TBA</time><p><strong>Schedule TBA.</strong> The programme between the start and the end is not set yet.</p></li>
-          <li><time datetime="${EVENT.dateISO}T18:00">18:00</time><p>End.</p></li>
-        </ol>
+        <h2>How to ship your project</h2>
+        <div>
+          <p class="guide-lead">Do this in order. The form needs the GitHub link and a page someone can open.</p>
+          <ol class="ship">
+            <li>
+              <span class="num">01</span>
+              <div>
+                <h3>Put the code on GitHub</h3>
+                <p><a href="https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository">Create a repository</a>, then <a href="https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github">push the project</a>. Open the repository and copy the address from the browser. It looks like <span class="url">https://github.com/you/your-project</span>. That address is the code URL.</p>
+              </div>
+            </li>
+            <li>
+              <span class="num">02</span>
+              <div>
+                <h3>Host it so it has a playable URL</h3>
+                <p>This link opens the project itself, not the GitHub page. A static site can use <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site">GitHub Pages</a>. Anything else can go on <a href="https://vercel.com/docs/getting-started-with-vercel">Vercel</a>. When the page loads, copy that address. That is the playable URL.</p>
+              </div>
+            </li>
+            <li>
+              <span class="num">03</span>
+              <div>
+                <h3>Write the README yourself</h3>
+                <p>Use your own words. Don't paste a generated README. Say what it does, how to run it, how you used ElevenLabs, and what you learned. If you need the API, start at the <a href="https://elevenlabs.io/docs/eleven-api/quickstart">ElevenLabs quickstart</a>.</p>
+              </div>
+            </li>
+            <li>
+              <span class="num">04</span>
+              <div>
+                <h3>The rest of the form</h3>
+                <p>Code URL from step 01. Playable URL from step 02. A screenshot: a picture of it running, already hosted, as a public link. A short description of what you built. Team members: the names of everyone on it.</p>
+              </div>
+            </li>
+            <li>
+              <span class="num">05</span>
+              <div>
+                <h3>Send it in</h3>
+                <p><a class="button" href="/submit">Send in my project</a></p>
+              </div>
+            </li>
+          </ol>
+        </div>
       </div>
     </section>
     <section class="section paper" id="partners">
@@ -239,25 +236,7 @@ export function renderHome() {
         <ul class="partners">${partners}</ul>
       </div>
     </section>
-    <section class="section" id="faq">
-      <div class="wrap split">
-        <h2>Before you come</h2>
-        <div class="faq">${faqHtml}</div>
-      </div>
-    </section>
-    <section class="section" id="location">
-      <div class="wrap split">
-        <h2>Find us at ${escapeHtml(EVENT.venue)}</h2>
-        <div class="where">
-          <address>
-            ${escapeHtml(EVENT.street)}<br>
-            ${escapeHtml(EVENT.city)}<br>
-            ${escapeHtml(EVENT.eircode)}
-          </address>
-          <p class="map-link"><a class="button secondary" href="${EVENT.mapUrl}">Open the map</a></p>
-        </div>
-      </div>
-    </section>`;
+`;
 
   return layout({
     title: "Innovation Galway × ElevenLabs",
@@ -275,7 +254,7 @@ function formShell({ path, title, lede, form }) {
       <div class="form-intro">
         <h1>${escapeHtml(title)}</h1>
         ${lede}
-        <img class="intro-art" src="/art/voice-bubble.svg" alt="" width="360" height="300">
+        <img class="intro-art" src="${asset("/art/voice-bubble.svg")}" alt="" width="360" height="300">
       </div>
       ${form}
     </div>`,

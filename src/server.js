@@ -29,10 +29,24 @@ app.use((req, res, next) => {
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
     "Content-Security-Policy":
       "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; form-action 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+    "Cache-Control": "no-cache",
   });
   next();
 });
-app.use(express.static(publicDir, { maxAge: "1h", index: false }));
+app.use(
+  express.static(publicDir, {
+    index: false,
+    etag: true,
+    maxAge: 0,
+    setHeaders(res) {
+      if (res.req.query?.v) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return;
+      }
+      res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+    },
+  }),
+);
 
 function asyncRoute(handler) {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
@@ -155,7 +169,7 @@ app.use((_req, res) => {
     renderStatus({
       title: "Not found",
       heading: "That page is not on the programme.",
-      text: "The event page and the project form are the pages that exist.",
+      text: "The project page and the submit form are the pages that exist.",
     }),
   );
 });
