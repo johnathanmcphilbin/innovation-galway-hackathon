@@ -155,11 +155,8 @@ export function renderHome() {
       <img class="hero-globe" src="${asset("/art/globe-inked.svg")}" alt="">
       <div class="wrap hero-grid">
         <div class="hero-copy">
-          <h1 class="hero-title" id="event-title">
-            <span>Innovation</span>
-            <span>Galway <span class="x">×</span></span>
-            <span>ElevenLabs</span>
-          </h1>
+          <h1 class="hero-title" id="event-title">Hack Club</h1>
+          <p class="hero-sub">Innovation Galway <span class="x">×</span> ElevenLabs</p>
           <p class="tagline"><span>${escapeHtml(EVENT.tagline)}</span></p>
           <p class="lede">${escapeHtml(EVENT.line)} Ship it when the code is on GitHub and someone can open the project in a browser.</p>
           <div class="actions">

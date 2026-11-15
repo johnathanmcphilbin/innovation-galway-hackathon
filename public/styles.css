@@ -180,7 +180,7 @@ a:hover {
 .hackclub-flag img {
   display: block;
   width: auto;
-  height: 4.6rem;
+  height: 6.4rem;
 }
 
 .skip {
@@ -215,7 +215,7 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   gap: 0.25rem 1.5rem;
-  padding: 0.75rem 0 0.75rem 8.5rem;
+  padding: 0.75rem 0 0.75rem 12rem;
 }
 
 .wordmark {
@@ -301,8 +301,20 @@ a:hover {
   display: block;
 }
 
-.hero-title .x {
+.hero-title .x,
+.hero-sub .x {
   color: var(--blue);
+}
+
+.hero-sub {
+  margin: 0.7rem 0 0;
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.6vw, 2.05rem);
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
 }
 
 .tagline {
@@ -1208,17 +1220,21 @@ th {
   }
 
   .hackclub-flag img {
-    height: 6.5rem;
+    height: 8.5rem;
   }
 
   .header-bar {
-    padding-left: 11.25rem;
+    padding-left: 16.25rem;
   }
 }
 
 @media (max-width: 719px) {
   .header-bar {
-    padding: 0.6rem 0 0.4rem 8.25rem;
+    padding: 0.6rem 0 0.4rem;
+  }
+
+  .wordmark {
+    margin-left: 12.5rem;
   }
 
   .nav {
