@@ -254,14 +254,14 @@ a:hover {
   text-decoration: underline;
 }
 
-.nav a[href="/signup"] {
+.nav a[href="/submit"] {
   padding: 0 0.85rem;
   border-radius: var(--radius);
   background: var(--sun);
   color: var(--ink);
 }
 
-.nav a[href="/signup"]:hover {
+.nav a[href="/submit"]:hover {
   background: var(--paper);
   color: var(--ink);
   text-decoration: none;

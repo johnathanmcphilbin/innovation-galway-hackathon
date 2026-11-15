@@ -43,13 +43,14 @@ test("local postgres does not force ssl", () => {
   assert.equal(config.ssl, false);
 });
 
-test("the signup handler never calls Airtable", () => {
-  const source = readFileSync(new URL("../src/server.js", import.meta.url), "utf8");
-  const signup = source.slice(source.indexOf('app.post(\n  "/signup"'), source.indexOf('app.get("/submit"'));
-  assert.ok(signup.includes("insertSignup"));
-  assert.equal(signup.includes("submitToAirtable"), false);
-  assert.equal(signup.includes("airtable.com"), false);
-  assert.equal(signup.toLowerCase().includes("slack"), false);
+test("submissions do not look up a sign-up, and the table migration stays", () => {
+  const server = readFileSync(new URL("../src/server.js", import.meta.url), "utf8");
+  const db = readFileSync(new URL("../src/db.js", import.meta.url), "utf8");
+  assert.equal(server.includes("findSignupByEmail"), false);
+  assert.equal(server.includes("insertSignup"), false);
+  assert.equal(server.toLowerCase().includes("slack"), false);
+  assert.match(db, /CREATE TABLE IF NOT EXISTS signups/);
+  assert.doesNotMatch(db, /DROP TABLE/i);
 });
 
 test("public pages render the event and the forms", async () => {
@@ -77,28 +78,23 @@ test("public pages render the event and the forms", async () => {
     assert.match(home.html, /Cristian Rotariu/);
     assert.match(home.html, /IdeasLab/);
     assert.match(home.html, /free ElevenLabs credits/i);
+    assert.match(home.html, /Send in my project/);
+    assert.doesNotMatch(home.html, /href="\/signup"/);
+    assert.doesNotMatch(home.html, /sign up/i);
     assert.doesNotMatch(home.html, /slack/i);
 
-    const signup = await get("/signup");
-    assert.equal(signup.status, 200);
-    assert.match(signup.html, /action="\/signup"/);
-    for (const name of [
-      "first_name",
-      "last_name",
-      "email",
-      "date_of_birth",
-      "school",
-      "dietary_needs",
-      "allergies",
-      "tshirt_size",
-      "guardian_name",
-      "guardian_email",
-      "guardian_phone",
-      "photo_consent",
-      "how_heard",
-    ]) {
-      assert.match(signup.html, new RegExp(`name="${name}"`));
-    }
+    const signup = await fetch(`http://127.0.0.1:${port}/signup`, { redirect: "manual" });
+    assert.equal(signup.status, 302);
+    assert.equal(new URL(signup.headers.get("location"), `http://127.0.0.1:${port}`).pathname, "/");
+
+    const signupPost = await fetch(`http://127.0.0.1:${port}/signup`, {
+      method: "POST",
+      redirect: "manual",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "first_name=Niamh",
+    });
+    assert.equal(signupPost.status, 303);
+    assert.equal(new URL(signupPost.headers.get("location"), `http://127.0.0.1:${port}`).pathname, "/");
 
     const submit = await get("/submit");
     assert.equal(submit.status, 200);
@@ -116,7 +112,7 @@ test("public pages render the event and the forms", async () => {
       assert.match(submit.html, new RegExp(`name="${name}"`));
     }
 
-    const rejected = await fetch(`http://127.0.0.1:${port}/signup`, {
+    const rejected = await fetch(`http://127.0.0.1:${port}/submit`, {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
       body: "first_name=",
@@ -124,12 +120,14 @@ test("public pages render the event and the forms", async () => {
     assert.equal(rejected.status, 422);
     const rejectedHtml = await rejected.text();
     assert.match(rejectedHtml, /Enter a name/);
+    assert.doesNotMatch(rejectedHtml, /sign up/i);
     assert.doesNotMatch(rejectedHtml, /slack/i);
 
     const admin = await get("/admin");
     assert.equal(admin.status, 200);
     assert.match(admin.html, /name="password"/);
     assert.match(admin.html, /noindex/);
+    assert.doesNotMatch(admin.html, /export\.csv/);
 
     const css = await get("/styles.css");
     assert.equal(css.status, 200);

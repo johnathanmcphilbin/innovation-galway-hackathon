@@ -2,7 +2,7 @@
 
 Site for the student hackathon at PorterShed, Galway, on Saturday 21 November 2026, 10am–6pm.
 
-Sign-ups are stored in Postgres. Project submissions are written to the Hack Club YSWS Airtable table. There is no Slack integration, and sign-ups are not sent to Airtable.
+Project submissions are written to the Hack Club YSWS Airtable table. The site does not take sign-ups. There is no Slack integration.
 
 ## Stack
 
@@ -11,9 +11,8 @@ Node 22, Express, server-rendered HTML, and `pg`. One process. `npm start` liste
 ## Pages
 
 - `/` event page: challenge, schedule (marked TBA), partners, FAQ, location
-- `/signup` registration, stored in Postgres
-- `/submit` project submission, written to Airtable if the email already exists in Postgres
-- `/admin` sign-up count, list, and CSV export. Password is `ADMIN_PASSWORD`. Submissions are reviewed in Airtable.
+- `/submit` project submission, written to Airtable
+- `/admin` password gate and a link to review submissions in Airtable. `ADMIN_PASSWORD` protects it.
 
 ## Environment
 
@@ -21,7 +20,7 @@ Copy `.env.example` to `.env` for local development.
 
 | Variable | Purpose |
 | --- | --- |
-| `DATABASE_URL` | Postgres connection string from Hack Club Orchard. Sign-ups only. |
+| `DATABASE_URL` | Optional. If set, boot still runs the existing idempotent migration. The site does not read or write sign-ups. |
 | `AIRTABLE_API_KEY` | Token that can create records in this base and nowhere else. |
 | `AIRTABLE_BASE_ID` | `appInkJZdtOT67t8l` |
 | `AIRTABLE_TABLE` | `YSWS Project Submission` (table id `tbloBMHxgUSH9zrkg`) |
@@ -40,16 +39,15 @@ npm test
 npm start
 ```
 
-The marketing pages load without a database. Sign-up and the admin list need `DATABASE_URL`. Submit also needs the Airtable variables. Remote Postgres (including Orchard) is connected with TLS; `sslmode` in the URL is handled by the app.
+The site runs without `DATABASE_URL`. Submit needs the Airtable variables. If `DATABASE_URL` is set, remote Postgres (including Orchard) is connected with TLS; `sslmode` in the URL is handled by the app. The old `signups` table is left in place and is not used.
 
 ## Deploy on Hack Club Orchard
 
 Orchard builds this repository from GitHub with Railpack. Node 22 is pinned in `package.json` (`engines`) and `.node-version`.
 
 1. Push the repository to GitHub and create one Orchard service from it. Start command: `npm start`. The process listens on `0.0.0.0` and `PORT`.
-2. Add the Orchard Postgres database and set `DATABASE_URL` on the service to that database's connection string.
-3. Set `AIRTABLE_API_KEY`, `AIRTABLE_BASE_ID=appInkJZdtOT67t8l`, `AIRTABLE_TABLE=YSWS Project Submission`, and `ADMIN_PASSWORD`.
-4. Deploy. The migration runs on boot and can run again safely.
-5. Open the service URL. `/admin` lists sign-ups and exports CSV. Review projects in Airtable: https://airtable.com/appInkJZdtOT67t8l/tbloBMHxgUSH9zrkg
+2. Set `AIRTABLE_API_KEY`, `AIRTABLE_BASE_ID=appInkJZdtOT67t8l`, `AIRTABLE_TABLE=YSWS Project Submission`, and `ADMIN_PASSWORD`. `DATABASE_URL` is optional.
+3. Deploy. If `DATABASE_URL` is set, the existing migration runs on boot and can run again safely. It does not drop tables.
+4. Open the service URL. `/admin` links to the submission review base: https://airtable.com/appInkJZdtOT67t8l/tbloBMHxgUSH9zrkg
 
-Rate limits are in memory, which matches a single service. Sign-up emails are stored in lowercase and rejected when they already exist.
+Rate limits are in memory, which matches a single service. `/signup` redirects to the home page.

@@ -49,7 +49,7 @@ Scale (18px base; tokens in `tokens.css`):
 Text on colour is always solid ink or solid paper. There are no alpha-tinted text colours, gradients, glows or blur.
 
 ## Layout, section by section
-**Header (all pages).** Wordmark in display italic on the left, nav on the right, and "Sign up" as the only yellow pill. On mobile the nav becomes one horizontally scrolling row instead of wrapping onto three lines.
+**Header (all pages).** Wordmark in display italic on the left, nav on the right, and "Submit" as the yellow pill. The hero action is "Send in my project". On mobile the nav becomes one horizontally scrolling row instead of wrapping onto three lines.
 
 **Home: hero.** Asymmetric 7/5 grid. On the left: the title (Innovation / Galway × / ElevenLabs), "Building for the youth" with an inked yellow marker underline, the lede, one blue date line (10am to 6pm · PorterShed, Galway), then the buttons and the facts. The eyebrow date above the H1 is gone. On the right: the hooker sticker, tilted −3°, with "Under 19s" (red) and "Free entry" (yellow) stickers slapped on its corners, plus a hand-lettered note: "Free ElevenLabs credits for everyone!" One inked globe peeks in from the top right as a nod to the poster. On mobile: title, copy and full-width buttons first, then the sticker at about 21rem. The note is hidden there and the globe is smaller.
 
