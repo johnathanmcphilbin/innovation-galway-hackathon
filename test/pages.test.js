@@ -70,6 +70,8 @@ test("public pages render the event and the forms", async () => {
 
     const home = await get("/");
     assert.equal(home.status, 200);
+    assert.match(home.html, /id="event-title">Hack Club</);
+    assert.match(home.html, /class="hero-sub">Innovation Galway/);
     assert.match(home.html, /Innovation/);
     assert.match(home.html, /Galway/);
     assert.match(home.html, /ElevenLabs/);

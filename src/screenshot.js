@@ -16,6 +16,28 @@ export function detectImage(bytes) {
   return null;
 }
 
+export function imageBytes(value) {
+  if (!value) return null;
+  if (Buffer.isBuffer(value)) return value;
+  if (value instanceof Uint8Array) return Buffer.from(value);
+  if (typeof value === "string") {
+    if (value.startsWith("\\x")) return Buffer.from(value.slice(2), "hex");
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed && parsed.type === "Buffer" && Array.isArray(parsed.data)) {
+        return Buffer.from(parsed.data);
+      }
+    } catch {
+      // Not a JSON buffer dump.
+    }
+    return Buffer.from(value, "latin1");
+  }
+  if (value && value.type === "Buffer" && Array.isArray(value.data)) {
+    return Buffer.from(value.data);
+  }
+  return null;
+}
+
 export function screenshotFilename(originalName, extension) {
   const base = String(originalName || "screenshot")
     .replace(/[/\\]/g, "")

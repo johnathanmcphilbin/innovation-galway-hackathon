@@ -155,11 +155,8 @@ export function renderHome() {
       <img class="hero-globe" src="${asset("/art/globe-inked.svg")}" alt="">
       <div class="wrap hero-grid">
         <div class="hero-copy">
-          <h1 class="hero-title" id="event-title">
-            <span>Innovation</span>
-            <span>Galway <span class="x">×</span></span>
-            <span>ElevenLabs</span>
-          </h1>
+          <h1 class="hero-title" id="event-title">Hack Club</h1>
+          <p class="hero-sub">Innovation Galway <span class="x">×</span> ElevenLabs</p>
           <p class="tagline"><span>${escapeHtml(EVENT.tagline)}</span></p>
           <p class="lede">${escapeHtml(EVENT.line)} Ship it when the code is on GitHub and someone can open the project in a browser.</p>
           <div class="actions">
@@ -462,11 +459,22 @@ export function renderAdminDetail({ submission, review, errors = [], formError =
           feedback: submission.reviewerFeedback,
         })
       : "";
+  const localShot = `/admin/submissions/${submission.id}/screenshot`;
+  const httpsShot = submission.screenshotUrl && submission.screenshotUrl.startsWith("https://")
+    ? submission.screenshotUrl
+    : "";
   const screenshot = submission.screenshotContentType
-    ? `<img class="shot" src="/admin/submissions/${submission.id}/screenshot" alt="Screenshot of ${escapeHtml(submission.projectName)}">`
-    : submission.screenshotUrl
-      ? `<p><a href="${escapeHtml(submission.screenshotUrl)}">Open the screenshot link</a></p>`
-      : `<p>No screenshot was saved.</p>`;
+    ? `<img class="shot" src="${localShot}" alt="Screenshot of ${escapeHtml(submission.projectName)}">
+       <p><a href="${localShot}">Open screenshot</a></p>`
+    : httpsShot
+      ? `<img class="shot" src="${escapeHtml(httpsShot)}" alt="Screenshot of ${escapeHtml(submission.projectName)}">
+         <p><a href="${escapeHtml(httpsShot)}">Open screenshot</a></p>`
+      : submission.screenshotUrl
+        ? `<p><a href="${escapeHtml(submission.screenshotUrl)}">Open screenshot</a></p>`
+        : `<p>No screenshot was saved.</p>`;
+  const deleteForm = `<form method="post" action="/admin/submissions/${submission.id}/delete" data-confirm="Delete this submission and its stored screenshot? This only removes it here. It does not change Airtable.">
+    <button class="text-button" type="submit">Delete submission</button>
+  </form>`;
   const canReview = !pushed && submission.status !== "rejected";
   const approveLabel = submission.airtableError ? "Try Airtable again" : "Approve and send to Airtable";
   const form = canReview
@@ -509,6 +517,7 @@ export function renderAdminDetail({ submission, review, errors = [], formError =
     ${justification ? `<h2>Justification sent</h2><pre class="justification">${escapeHtml(justification)}</pre>` : ""}
     <h2>Screenshot</h2>
     ${screenshot}
+    ${deleteForm}
     <dl class="record">
       ${fact("First name", submission.firstName)}
       ${fact("Last name", submission.lastName)}
