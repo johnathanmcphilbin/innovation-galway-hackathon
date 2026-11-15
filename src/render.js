@@ -1,5 +1,6 @@
 import { asset } from "./assets.js";
 import { EVENT, airtableReviewUrl } from "./constants.js";
+import { formatOverrideJustification } from "./review.js";
 
 export function escapeHtml(value) {
   return String(value ?? "")
@@ -108,6 +109,8 @@ function field({
   inputmode,
   min,
   max,
+  step,
+  accept,
   rows = 4,
 }) {
   const described = [];
@@ -119,12 +122,14 @@ function field({
   const auto = autocomplete ? ` autocomplete="${escapeHtml(autocomplete)}"` : "";
   const maxLength = maxlength ? ` maxlength="${maxlength}"` : "";
   const mode = inputmode ? ` inputmode="${escapeHtml(inputmode)}"` : "";
-  const minAttr = min ? ` min="${escapeHtml(min)}"` : "";
-  const maxAttr = max ? ` max="${escapeHtml(max)}"` : "";
-  const common = `id="${escapeHtml(id)}" name="${escapeHtml(name)}"${requiredAttr}${auto}${maxLength}${mode}${minAttr}${maxAttr}${invalid}${describedAttr}`;
+  const minAttr = min != null && min !== "" ? ` min="${escapeHtml(min)}"` : "";
+  const maxAttr = max != null && max !== "" ? ` max="${escapeHtml(max)}"` : "";
+  const stepAttr = step ? ` step="${escapeHtml(step)}"` : "";
+  const acceptAttr = accept ? ` accept="${escapeHtml(accept)}"` : "";
+  const common = `id="${escapeHtml(id)}" name="${escapeHtml(name)}"${requiredAttr}${auto}${maxLength}${mode}${minAttr}${maxAttr}${stepAttr}${acceptAttr}${invalid}${describedAttr}`;
   const control = multiline
     ? `<textarea ${common} rows="${Number(rows)}">${escapeHtml(value)}</textarea>`
-    : `<input type="${escapeHtml(type)}" ${common} value="${escapeHtml(value)}">`;
+    : `<input type="${escapeHtml(type)}" ${common}${type === "file" ? "" : ` value="${escapeHtml(value)}"`}>`;
   return `<div class="field">
     <label for="${escapeHtml(id)}">${escapeHtml(label)}${required ? ' <span class="req">Required</span>' : ""}</label>
     ${control}
@@ -216,7 +221,7 @@ export function renderHome() {
               <span class="num">04</span>
               <div>
                 <h3>The rest of the form</h3>
-                <p>Code URL from step 01. Playable URL from step 02. A screenshot: a picture of it running, already hosted, as a public link. A short description of what you built. Team members: the names of everyone on it.</p>
+                <p>Code URL from step 01. Playable URL from step 02. A screenshot: upload a picture of it running (PNG, JPEG, WebP, or GIF, up to 5 MB). A public image link works if you already hosted one. A short description of what you built. Team members: the names of everyone on it. Birthday and address are on the form too.</p>
               </div>
             </li>
             <li>
@@ -266,7 +271,7 @@ export function renderSubmit({ values, errors = [], formError = "" }) {
   const addressOpen = ["address1", "address2", "city", "state", "country", "zip"].some(
     (field) => values[field] || err(field),
   );
-  const form = `<form class="form" method="post" action="/submit" novalidate>
+  const form = `<form class="form" method="post" action="/submit" enctype="multipart/form-data" novalidate>
     ${formBanner(formError)}
     ${errorSummary(errors)}
     <fieldset>
@@ -276,12 +281,15 @@ export function renderSubmit({ values, errors = [], formError = "" }) {
       ${field({ id: "email", name: "email", type: "email", label: "Email", value: values.email, required: true, autocomplete: "email", inputmode: "email", error: err("email"), maxlength: 254 })}
       ${field({ id: "birthday", name: "birthday", type: "date", label: "Birthday", value: values.birthday, required: true, autocomplete: "bday", error: err("birthday") })}
       ${field({ id: "github_username", name: "github_username", label: "GitHub username", value: values.github_username, required: true, autocomplete: "username", error: err("github_username"), hint: "A username, or a github.com profile link." })}
+      ${field({ id: "hackatime_id", name: "hackatime_id", label: "Hackatime ID", value: values.hackatime_id, error: err("hackatime_id"), maxlength: 80, hint: "Optional. Leave this blank if you don't have one." })}
     </fieldset>
     <fieldset>
       <legend>The project</legend>
+      ${field({ id: "project_name", name: "project_name", label: "Project name", value: values.project_name, error: err("project_name"), maxlength: 120, hint: "Optional. If you leave it blank, the review uses the GitHub repository name." })}
       ${field({ id: "code_url", name: "code_url", type: "url", label: "Code URL", value: values.code_url, required: true, inputmode: "url", error: err("code_url"), hint: "Where the source lives." })}
       ${field({ id: "playable_url", name: "playable_url", type: "url", label: "Playable URL", value: values.playable_url, required: true, inputmode: "url", error: err("playable_url"), hint: "Where someone can try it." })}
-      ${field({ id: "screenshot_url", name: "screenshot_url", type: "url", label: "Screenshot URL", value: values.screenshot_url, required: true, inputmode: "url", error: err("screenshot_url"), hint: "A public link to an image you have already hosted. This form does not upload files." })}
+      ${field({ id: "screenshot", name: "screenshot", type: "file", label: "Screenshot", accept: "image/png,image/jpeg,image/webp,image/gif", error: err("screenshot"), hint: "PNG, JPEG, WebP, or GIF. 5 MB maximum. This stays on the server until a reviewer approves it." })}
+      ${field({ id: "screenshot_url", name: "screenshot_url", type: "url", label: "Screenshot URL", value: values.screenshot_url, inputmode: "url", error: err("screenshot_url"), hint: "Optional if you uploaded a file. A public link to an image you have already hosted." })}
       ${field({ id: "description", name: "description", label: "Description", value: values.description, required: true, multiline: true, rows: 6, error: err("description"), hint: "What you built. Markdown is fine." })}
     </fieldset>
     <fieldset>
@@ -311,7 +319,7 @@ export function renderSubmit({ values, errors = [], formError = "" }) {
   return formShell({
     path: "/submit",
     title: "Submit a project",
-    lede: `<p>Projects are reviewed by the organisers.</p>`,
+    lede: `<p>This saves your project for review. It is not sent to the YSWS table until an organiser approves it.</p>`,
     form,
   });
 }
@@ -323,7 +331,7 @@ export function renderSubmitThanks() {
     body: `<div class="wrap status-page">
       <p class="kicker">Submit</p>
       <h1>Project submitted.</h1>
-      <p class="lede">It's in the review list. You can close this page.</p>
+      <p class="lede">It's in the review list. An organiser will look at it before it goes to the YSWS table.</p>
       <p><a href="/">Back to the event</a></p>
     </div>`,
   });
@@ -353,23 +361,181 @@ export function renderAdminLogin({ error = "" }) {
   });
 }
 
-export function renderAdmin() {
-  const reviewUrl = airtableReviewUrl();
+function formatWhen(value) {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-IE", {
+    timeZone: "Europe/Dublin",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function adminShell(body) {
   return layout({
     title: "Admin",
     path: "/admin",
     robots: "noindex",
-    body: `<div class="wrap admin-page">
-      <div class="admin-head">
-        <h1>Submissions</h1>
-        <form method="post" action="/admin/logout"><button class="text-button" type="submit">Log out</button></form>
-      </div>
-      <p class="lede">Projects are reviewed in Airtable.</p>
-      <p class="admin-actions">
-        <a class="button" href="${escapeHtml(reviewUrl)}">Review submissions in Airtable</a>
-      </p>
-    </div>`,
+    script: true,
+    body: `<div class="wrap admin-page">${body}</div>`,
   });
+}
+
+function adminHead(title) {
+  return `<div class="admin-head">
+    <h1>${escapeHtml(title)}</h1>
+    <form method="post" action="/admin/logout"><button class="text-button" type="submit">Log out</button></form>
+  </div>`;
+}
+
+export function renderAdminList({ status = "pending", submissions = [], counts = {}, dbError = "" }) {
+  const filters = [
+    ["pending", "Pending"],
+    ["approved", "Approved"],
+    ["rejected", "Rejected"],
+    ["all", "All"],
+  ];
+  const nav = filters
+    .map(([key, label]) => {
+      const current = key === status ? ' aria-current="page"' : "";
+      const count = counts[key] ?? 0;
+      return `<a href="/admin?status=${key}"${current}>${label} (${count})</a>`;
+    })
+    .join("");
+  const rows = submissions
+    .map((row) => {
+      const push = row.airtablePushedAt ? "In Airtable" : row.airtableError ? "Needs a retry" : "";
+      return `<tr>
+        <td><a href="/admin/submissions/${row.id}">${escapeHtml(row.projectName)}</a></td>
+        <td>${escapeHtml(`${row.firstName} ${row.lastName}`)}</td>
+        <td>${escapeHtml(row.email)}</td>
+        <td>${escapeHtml(row.status)}</td>
+        <td>${escapeHtml(push)}</td>
+        <td>${escapeHtml(formatWhen(row.createdAt))}</td>
+      </tr>`;
+    })
+    .join("");
+  const empty = submissions.length
+    ? ""
+    : `<p>No ${status === "all" ? "" : `${status} `}projects yet.</p>`;
+  return adminShell(`
+    ${adminHead("Submissions")}
+    ${formBanner(dbError)}
+    <p class="filters">${nav}</p>
+    ${empty}
+    ${
+      submissions.length
+        ? `<div class="table-wrap"><table>
+            <thead><tr><th>Project</th><th>Name</th><th>Email</th><th>Status</th><th>Airtable</th><th>Submitted</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table></div>`
+        : ""
+    }
+    <p class="admin-actions"><a href="${escapeHtml(airtableReviewUrl())}">Open the YSWS table</a></p>
+  `);
+}
+
+function fact(label, value) {
+  if (value == null || value === "") return "";
+  return `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`;
+}
+
+function linkFact(label, href) {
+  if (!href) return "";
+  const safe = escapeHtml(href);
+  return `<dt>${escapeHtml(label)}</dt><dd><a href="${safe}">${safe}</a></dd>`;
+}
+
+export function renderAdminDetail({ submission, review, errors = [], formError = "" }) {
+  const err = (name) => errorFor(errors, name);
+  const pushed = Boolean(submission.airtablePushedAt);
+  const justification =
+    submission.status === "approved" && submission.reviewedAt && submission.reviewerFeedback
+      ? formatOverrideJustification({
+          projectName: submission.projectName,
+          reviewerName: submission.reviewerName,
+          reviewedAt: submission.reviewedAt,
+          feedback: submission.reviewerFeedback,
+        })
+      : "";
+  const screenshot = submission.screenshotContentType
+    ? `<img class="shot" src="/admin/submissions/${submission.id}/screenshot" alt="Screenshot of ${escapeHtml(submission.projectName)}">`
+    : submission.screenshotUrl
+      ? `<p><a href="${escapeHtml(submission.screenshotUrl)}">Open the screenshot link</a></p>`
+      : `<p>No screenshot was saved.</p>`;
+  const canReview = !pushed && submission.status !== "rejected";
+  const approveLabel = submission.airtableError ? "Try Airtable again" : "Approve and send to Airtable";
+  const form = canReview
+    ? `<form class="form" method="post" action="/admin/submissions/${submission.id}">
+        ${formBanner(formError)}
+        ${errorSummary(errors)}
+        <fieldset>
+          <legend>Review</legend>
+          ${field({ id: "project_name", name: "project_name", label: "Project name", value: review.project_name, required: true, maxlength: 120, error: err("project_name") })}
+          ${field({ id: "reviewer_name", name: "reviewer_name", label: "Reviewer name", value: review.reviewer_name, required: true, maxlength: 80, error: err("reviewer_name"), hint: "Defaults to Johnathan Mc philbin. Change it if someone else reviewed this." })}
+          ${field({ id: "approved_hours", name: "approved_hours", type: "number", label: "Approved hours", value: review.approved_hours, required: true, min: "0", max: "200", step: "0.01", inputmode: "decimal", error: err("approved_hours"), hint: "Written to Optional - Override Hours Spent." })}
+          ${field({ id: "reviewer_feedback", name: "reviewer_feedback", label: "Feedback to the participant", value: review.reviewer_feedback, required: true, multiline: true, rows: 5, error: err("reviewer_feedback"), hint: "Include why the hours changed, for example from 8 hours to 5 hours." })}
+        </fieldset>
+        <fieldset>
+          <legend>YSWS justification</legend>
+          ${field({ id: "just_hackatime_projects", name: "just_hackatime_projects", label: "Hackatime project names and dates", value: review.just_hackatime_projects, multiline: true, rows: 3, error: err("just_hackatime_projects"), hint: "Project name, then Innovation Galway hackathon and the date." })}
+          ${field({ id: "just_hackatime_id", name: "just_hackatime_id", label: "Submitter Hackatime ID", value: review.just_hackatime_id, maxlength: 80, error: err("just_hackatime_id"), hint: "Optional." })}
+          ${field({ id: "just_lapse_links", name: "just_lapse_links", label: "Lapse links", value: review.just_lapse_links, multiline: true, rows: 2, error: err("just_lapse_links"), hint: "Comma-separated, if you have them." })}
+          ${field({ id: "just_technical_features", name: "just_technical_features", label: "Specific technical features", value: review.just_technical_features, multiline: true, rows: 4, error: err("just_technical_features"), hint: "What you verified, including ElevenLabs API use." })}
+          ${field({ id: "just_deflation", name: "just_deflation", label: "Deflation justification", value: review.just_deflation, multiline: true, rows: 3, error: err("just_deflation"), hint: "Why the hours were reduced, if they were." })}
+          ${field({ id: "just_alternate_tracking", name: "just_alternate_tracking", label: "Alternate tracking method", value: review.just_alternate_tracking, multiline: true, rows: 3, error: err("just_alternate_tracking"), hint: "For example, in-person attendance at the PorterShed hackathon when there is no Hackatime." })}
+          ${field({ id: "just_additional", name: "just_additional", label: "Additional justification", value: review.just_additional, multiline: true, rows: 6, error: err("just_additional"), hint: "Team members, ElevenLabs use, youth impact, and any extra notes." })}
+        </fieldset>
+        <div class="review-actions">
+          <button class="button" type="submit" name="decision" value="approve">${approveLabel}</button>
+          ${
+            submission.airtableRecordId
+              ? ""
+              : `<button class="button secondary" type="submit" name="decision" value="reject">Reject</button>`
+          }
+        </div>
+      </form>`
+    : "";
+
+  return adminShell(`
+    ${adminHead(submission.projectName)}
+    <p class="status-note"><a href="/admin">All submissions</a> · ${escapeHtml(submission.status)}${pushed ? " · in Airtable" : ""}</p>
+    ${submission.airtableError ? formBanner(submission.airtableError) : ""}
+    ${pushed ? `<p class="status-note">Airtable record ${escapeHtml(submission.airtableRecordId)}. Sending this again will not create another row.</p>` : ""}
+    ${justification ? `<h2>Justification sent</h2><pre class="justification">${escapeHtml(justification)}</pre>` : ""}
+    <h2>Screenshot</h2>
+    ${screenshot}
+    <dl class="record">
+      ${fact("First name", submission.firstName)}
+      ${fact("Last name", submission.lastName)}
+      ${fact("Email", submission.email)}
+      ${fact("Birthday", submission.birthday)}
+      ${fact("GitHub username", submission.githubUsername)}
+      ${fact("Hackatime ID", submission.hackatimeId)}
+      ${linkFact("Code URL", submission.codeUrl)}
+      ${linkFact("Playable URL", submission.playableUrl)}
+      ${linkFact("Screenshot URL", submission.screenshotUrl)}
+      ${fact("Description", submission.description)}
+      ${fact("Team members", submission.teamMembers)}
+      ${fact("How ElevenLabs was used", submission.elevenLabsUse)}
+      ${fact("How it helps young people", submission.youthImpact)}
+      ${fact("How did you hear about this?", submission.howHeard)}
+      ${fact("What are we doing well?", submission.doingWell)}
+      ${fact("How can we improve?", submission.improve)}
+      ${fact("Address line 1", submission.address1)}
+      ${fact("Address line 2", submission.address2)}
+      ${fact("City", submission.city)}
+      ${fact("State or province", submission.state)}
+      ${fact("Country", submission.country)}
+      ${fact("Postcode", submission.zip)}
+      ${fact("Submitted", formatWhen(submission.createdAt))}
+    </dl>
+    ${form}
+  `);
 }
 
 export function renderStatus({ title, heading, text, path = "/" }) {

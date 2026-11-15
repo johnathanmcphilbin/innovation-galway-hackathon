@@ -291,6 +291,8 @@ export function emptySubmissionValues() {
     email: "",
     birthday: "",
     github_username: "",
+    project_name: "",
+    hackatime_id: "",
     code_url: "",
     playable_url: "",
     screenshot_url: "",
@@ -310,7 +312,21 @@ export function emptySubmissionValues() {
   };
 }
 
-export function validateSubmission(input) {
+function derivedProjectName(codeUrl) {
+  try {
+    const url = new URL(codeUrl);
+    const parts = url.pathname.split("/").filter(Boolean);
+    const repo = parts.length >= 2 ? parts[1] : parts[0];
+    if (!repo) return "Untitled project";
+    const name = decodeURIComponent(repo).replace(/\.git$/i, "").replace(/[-_]+/g, " ").trim();
+    if (!name || name.length > 120) return "Untitled project";
+    return name;
+  } catch {
+    return "Untitled project";
+  }
+}
+
+export function validateSubmission(input, { hasScreenshot = false } = {}) {
   const src = input && typeof input === "object" ? input : {};
   const errors = [];
   const firstName = take(cleanPersonName(src.first_name), errors, "first_name");
@@ -331,17 +347,40 @@ export function validateSubmission(input) {
     });
   }
 
+  const projectNameResult = cleanShortText(src.project_name, {
+    max: 120,
+    required: false,
+    label: "the project name",
+  });
+  if (projectNameResult.error) errors.push({ field: "project_name", message: projectNameResult.error });
+
+  const hackatimeResult = cleanShortText(src.hackatime_id, {
+    max: 80,
+    required: false,
+    label: "the Hackatime ID",
+  });
+  if (hackatimeResult.error) errors.push({ field: "hackatime_id", message: hackatimeResult.error });
+
   const codeUrl = parseHttpUrl(src.code_url);
   if (!codeUrl) errors.push({ field: "code_url", message: "Enter an http(s) link to the code." });
   const playableUrl = parseHttpUrl(src.playable_url);
   if (!playableUrl) {
     errors.push({ field: "playable_url", message: "Enter an http(s) link where the project can be tried." });
   }
-  const screenshotUrl = parseHttpUrl(src.screenshot_url);
-  if (!screenshotUrl) {
+  const screenshotRaw = asString(src.screenshot_url).trim();
+  let screenshotUrl = null;
+  if (screenshotRaw) {
+    screenshotUrl = parseHttpUrl(screenshotRaw);
+    if (!screenshotUrl) {
+      errors.push({
+        field: "screenshot_url",
+        message: "Enter a public http(s) link to a hosted screenshot.",
+      });
+    }
+  } else if (!hasScreenshot) {
     errors.push({
-      field: "screenshot_url",
-      message: "Enter a public http(s) link to a hosted screenshot.",
+      field: "screenshot",
+      message: "Upload a screenshot, or paste a public image link.",
     });
   }
 
@@ -413,6 +452,8 @@ export function validateSubmission(input) {
           lastName,
           email: emailResult.value,
           birthday,
+          projectName: projectNameResult.value || derivedProjectName(codeUrl),
+          hackatimeId: hackatimeResult.value,
           githubUsername: github,
           codeUrl,
           playableUrl,
@@ -430,6 +471,107 @@ export function validateSubmission(input) {
           state: address.state,
           country: address.country,
           zip: address.zip,
+        }
+      : null,
+  };
+}
+
+function cleanOptionalMultiline(raw, { max, label }) {
+  const value = asString(raw).replace(/\r\n/g, "\n").trim();
+  if (!value) return { value: "" };
+  if (value.length > max) return { error: `${label} must be ${max} characters or fewer.` };
+  if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(value)) {
+    return { error: "Remove hidden control characters." };
+  }
+  return { value };
+}
+
+function parseHours(raw) {
+  const value = asString(raw).trim();
+  if (!/^\d{1,4}(\.\d{1,2})?$/.test(value)) {
+    return { error: "Enter approved hours as a number, like 5 or 4.5." };
+  }
+  const hours = Number(value);
+  if (hours > 200) return { error: "Enter 200 hours or fewer." };
+  return { value: hours };
+}
+
+export function emptyReviewValues(fallback = {}) {
+  return {
+    project_name: fallback.project_name || "",
+    reviewer_name: fallback.reviewer_name || "",
+    approved_hours: fallback.approved_hours || "",
+    reviewer_feedback: fallback.reviewer_feedback || "",
+    just_hackatime_projects: fallback.just_hackatime_projects || "",
+    just_hackatime_id: fallback.just_hackatime_id || "",
+    just_lapse_links: fallback.just_lapse_links || "",
+    just_technical_features: fallback.just_technical_features || "",
+    just_deflation: fallback.just_deflation || "",
+    just_alternate_tracking: fallback.just_alternate_tracking || "",
+    just_additional: fallback.just_additional || "",
+  };
+}
+
+export function validateReview(input) {
+  const src = input && typeof input === "object" ? input : {};
+  const errors = [];
+  const projectName = take(
+    cleanShortText(src.project_name, {
+      max: 120,
+      required: true,
+      missing: "Enter the project name.",
+    }),
+    errors,
+    "project_name",
+  );
+  const reviewerName = take(cleanPersonName(src.reviewer_name), errors, "reviewer_name");
+  const hoursResult = parseHours(src.approved_hours);
+  if (hoursResult.error) errors.push({ field: "approved_hours", message: hoursResult.error });
+  const feedback = take(
+    cleanMultiline(src.reviewer_feedback, { min: 2, max: 8000, label: "Feedback" }),
+    errors,
+    "reviewer_feedback",
+  );
+
+  const optionalFields = [
+    ["just_hackatime_projects", "Hackatime projects"],
+    ["just_hackatime_id", "Hackatime ID"],
+    ["just_lapse_links", "Lapse links"],
+    ["just_technical_features", "Technical features"],
+    ["just_deflation", "Deflation justification"],
+    ["just_alternate_tracking", "Alternate tracking"],
+    ["just_additional", "Additional justification"],
+  ];
+  const optional = {};
+  for (const [field, label] of optionalFields) {
+    const result = cleanOptionalMultiline(src[field], { max: 8000, label });
+    if (result.error) errors.push({ field, message: result.error });
+    optional[field] = result.value || "";
+  }
+
+  const values = emptyReviewValues();
+  for (const key of Object.keys(values)) {
+    values[key] = asString(src[key]).replace(/\r\n/g, "\n").trim();
+  }
+
+  const ok = errors.length === 0;
+  return {
+    ok,
+    errors,
+    values,
+    value: ok
+      ? {
+          projectName,
+          reviewerName,
+          approvedHours: hoursResult.value,
+          reviewerFeedback: feedback,
+          justHackatimeProjects: optional.just_hackatime_projects,
+          justHackatimeId: optional.just_hackatime_id,
+          justLapseLinks: optional.just_lapse_links,
+          justTechnicalFeatures: optional.just_technical_features,
+          justDeflation: optional.just_deflation,
+          justAlternateTracking: optional.just_alternate_tracking,
+          justAdditional: optional.just_additional,
         }
       : null,
   };

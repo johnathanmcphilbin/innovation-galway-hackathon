@@ -1,19 +1,34 @@
 import express from "express";
+import multer from "multer";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { adminCookieValue, isAdminRequest, passwordMatches } from "./auth.js";
-import { submitToAirtable } from "./airtable.js";
-import { closePool, migrate } from "./db.js";
-import { createRateLimiter } from "./rate-limit.js";
+import { pushApprovedSubmission } from "./airtable.js";
 import {
-  renderAdmin,
+  closePool,
+  getScreenshot,
+  getSubmission,
+  insertSubmission,
+  isDbUnavailable,
+  listSubmissions,
+  migrate,
+  recordAirtablePush,
+  saveReview,
+  submissionCounts,
+} from "./db.js";
+import { createRateLimiter } from "./rate-limit.js";
+import { prefillReview } from "./review.js";
+import {
+  renderAdminDetail,
+  renderAdminList,
   renderAdminLogin,
   renderHome,
   renderStatus,
   renderSubmit,
   renderSubmitThanks,
 } from "./render.js";
-import { emptySubmissionValues, validateSubmission } from "./validate.js";
+import { MAX_SCREENSHOT_BYTES, inspectScreenshot } from "./screenshot.js";
+import { emptySubmissionValues, validateReview, validateSubmission } from "./validate.js";
 
 const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
 
@@ -55,6 +70,25 @@ function asyncRoute(handler) {
 const submitLimit = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 8 });
 const loginLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 5 });
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_SCREENSHOT_BYTES, files: 1, fields: 40, fieldSize: 64 * 1024 },
+});
+
+function screenshotUpload(req, res, next) {
+  upload.single("screenshot")(req, res, (error) => {
+    if (!error) {
+      next();
+      return;
+    }
+    req.screenshotError =
+      error.code === "LIMIT_FILE_SIZE"
+        ? "That screenshot is larger than 5 MB."
+        : "Could not read that screenshot. Upload a PNG, JPEG, WebP, or GIF.";
+    next();
+  });
+}
+
 function tooMany(res, { title, heading, text, path }) {
   res.status(429).type("html").send(renderStatus({ title, heading, text, path }));
 }
@@ -86,6 +120,7 @@ app.get("/submit", (_req, res) => {
 
 app.post(
   "/submit",
+  screenshotUpload,
   asyncRoute(async (req, res) => {
     if (!submitLimit(`submit:${req.ip}`)) {
       tooMany(res, {
@@ -97,22 +132,33 @@ app.post(
       return;
     }
 
-    const result = validateSubmission(req.body);
+    const inspected = req.file ? inspectScreenshot(req.file) : null;
+    const fileError = req.screenshotError || (inspected && !inspected.ok ? inspected.error : "");
+    const result = validateSubmission(req.body || {}, {
+      hasScreenshot: Boolean(fileError || inspected?.ok),
+    });
+    if (fileError) {
+      result.errors.push({ field: "screenshot", message: fileError });
+      result.ok = false;
+    }
     if (!result.ok) {
       res.status(422).type("html").send(renderSubmit({ values: result.values, errors: result.errors }));
       return;
     }
 
     try {
-      await submitToAirtable(result.value);
+      await insertSubmission(result.value, inspected?.ok ? inspected : null);
     } catch (error) {
-      const status = error.code === "AIRTABLE_CONFIG" ? 503 : 502;
-      const message =
-        error.code === "AIRTABLE_CONFIG"
-          ? "Project submission is not available yet because Airtable is not configured. Nothing was submitted."
-          : `We couldn't send the project. ${error.message}`;
-      console.error(`Submit failed (${error.code || "error"})`);
-      res.status(status).type("html").send(renderSubmit({ values: result.values, formError: message }));
+      const unavailable = error.code === "DB_CONFIG" || isDbUnavailable(error);
+      console.error(`Submit failed (${error.code || error.name || "error"})`);
+      res.status(unavailable ? 503 : 500).type("html").send(
+        renderSubmit({
+          values: result.values,
+          formError: unavailable
+            ? "Project submission is not available yet because the database is not configured. Nothing was saved."
+            : "We couldn't save the project. Nothing was sent to Airtable. Try again.",
+        }),
+      );
       return;
     }
 
@@ -124,15 +170,180 @@ app.get("/submit/thanks", (_req, res) => {
   res.type("html").send(renderSubmitThanks());
 });
 
+function submissionId(raw) {
+  if (!/^\d+$/.test(String(raw || ""))) return null;
+  const id = Number(raw);
+  if (!Number.isSafeInteger(id) || id < 1) return null;
+  return id;
+}
+
+function adminPage(req, res) {
+  res.set("Cache-Control", "no-store");
+  if (!isAdminRequest(req)) {
+    res.status(req.method === "GET" ? 200 : 401).type("html").send(renderAdminLogin({}));
+    return false;
+  }
+  return true;
+}
+
 app.get(
   "/admin",
   asyncRoute(async (req, res) => {
-    res.set("Cache-Control", "no-store");
+    if (!adminPage(req, res)) return;
+    const status = ["pending", "approved", "rejected", "all"].includes(req.query.status)
+      ? req.query.status
+      : "pending";
+    try {
+      const [submissions, counts] = await Promise.all([listSubmissions(status), submissionCounts()]);
+      res.type("html").send(renderAdminList({ status, submissions, counts }));
+    } catch (error) {
+      const unavailable = error.code === "DB_CONFIG" || isDbUnavailable(error);
+      res.status(unavailable ? 503 : 500).type("html").send(
+        renderAdminList({
+          status,
+          dbError: unavailable
+            ? "The database is not configured, so submissions cannot be listed."
+            : "The submission list could not be loaded.",
+        }),
+      );
+    }
+  }),
+);
+
+app.get(
+  "/admin/submissions/:id/screenshot",
+  asyncRoute(async (req, res) => {
+    res.set("Cache-Control", "private, no-store");
     if (!isAdminRequest(req)) {
-      res.type("html").send(renderAdminLogin({}));
+      res.status(401).type("text/plain").send("Sign in required.");
       return;
     }
-    res.type("html").send(renderAdmin());
+    const id = submissionId(req.params.id);
+    const shot = id ? await getScreenshot(id) : null;
+    if (!shot || !/^image\/(png|jpeg|webp|gif)$/.test(shot.contentType || "")) {
+      res.status(404).type("text/plain").send("No screenshot.");
+      return;
+    }
+    res.set("Content-Type", shot.contentType);
+    res.set("X-Content-Type-Options", "nosniff");
+    res.send(shot.bytes);
+  }),
+);
+
+app.get(
+  "/admin/submissions/:id",
+  asyncRoute(async (req, res) => {
+    if (!adminPage(req, res)) return;
+    const id = submissionId(req.params.id);
+    const submission = id ? await getSubmission(id) : null;
+    if (!submission) {
+      res.status(404).type("html").send(
+        renderStatus({
+          title: "Not found",
+          heading: "That submission is not in the list.",
+          text: "Go back to the review list.",
+          path: "/admin",
+        }),
+      );
+      return;
+    }
+    res.type("html").send(renderAdminDetail({ submission, review: prefillReview(submission) }));
+  }),
+);
+
+app.post(
+  "/admin/submissions/:id",
+  asyncRoute(async (req, res) => {
+    if (!adminPage(req, res)) return;
+    const id = submissionId(req.params.id);
+    const existing = id ? await getSubmission(id) : null;
+    if (!existing) {
+      res.status(404).type("html").send(
+        renderStatus({
+          title: "Not found",
+          heading: "That submission is not in the list.",
+          text: "Go back to the review list.",
+          path: "/admin",
+        }),
+      );
+      return;
+    }
+    if (existing.airtablePushedAt) {
+      res.type("html").send(renderAdminDetail({ submission: existing, review: prefillReview(existing) }));
+      return;
+    }
+
+    const decision = req.body?.decision === "reject" ? "reject" : "approve";
+    if (decision === "reject") {
+      if (existing.airtableRecordId) {
+        res.status(409).type("html").send(
+          renderAdminDetail({
+            submission: existing,
+            review: prefillReview(existing),
+            formError: "An Airtable row already exists for this project. Retry the upload instead of rejecting it.",
+          }),
+        );
+        return;
+      }
+      await saveReview(id, {
+        status: "rejected",
+        projectName: existing.projectName,
+        reviewerName: String(req.body?.reviewer_name || "").trim() || existing.reviewerName || null,
+        approvedHours: null,
+        reviewerFeedback: String(req.body?.reviewer_feedback || "").trim() || null,
+        justHackatimeProjects: null,
+        justHackatimeId: null,
+        justLapseLinks: null,
+        justTechnicalFeatures: null,
+        justDeflation: null,
+        justAlternateTracking: null,
+        justAdditional: null,
+        reviewedAt: new Date(),
+      });
+      res.redirect(303, `/admin/submissions/${id}`);
+      return;
+    }
+
+    const review = validateReview(req.body);
+    if (!review.ok) {
+      res.status(422).type("html").send(
+        renderAdminDetail({ submission: existing, review: review.values, errors: review.errors }),
+      );
+      return;
+    }
+
+    const reviewedAt = new Date();
+    const saved = await saveReview(id, { ...review.value, status: "approved", reviewedAt });
+    if (!saved) {
+      const current = await getSubmission(id);
+      res.type("html").send(renderAdminDetail({ submission: current, review: prefillReview(current) }));
+      return;
+    }
+
+    const row = await getSubmission(id, { includeBytes: true });
+    try {
+      const pushed = await pushApprovedSubmission(row);
+      await recordAirtablePush(id, {
+        recordId: pushed.id,
+        pushed: true,
+        error: null,
+        screenshotUploaded: Boolean(row.screenshotBytes),
+      });
+    } catch (error) {
+      const recordId = Object.prototype.hasOwnProperty.call(error, "airtableRecordId")
+        ? error.airtableRecordId
+        : row.airtableRecordId;
+      console.error(`Airtable push failed (${error.code || "error"})`);
+      await recordAirtablePush(id, {
+        recordId: recordId || null,
+        pushed: false,
+        error: error.code === "AIRTABLE_CONFIG"
+          ? "Airtable is not configured, so this approval was saved here only."
+          : error.message,
+        screenshotUploaded: false,
+      });
+    }
+    res.redirect(303, `/admin/submissions/${id}`);
   }),
 );
 

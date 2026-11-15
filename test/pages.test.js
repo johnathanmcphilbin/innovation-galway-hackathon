@@ -111,15 +111,26 @@ test("public pages render the event and the forms", async () => {
     const submit = await get("/submit");
     assert.equal(submit.status, 200);
     assert.match(submit.html, /action="\/submit"/);
+    assert.match(submit.html, /enctype="multipart\/form-data"/);
     for (const name of [
+      "project_name",
+      "birthday",
+      "hackatime_id",
       "code_url",
       "playable_url",
+      "screenshot",
       "screenshot_url",
       "description",
       "github_username",
       "team_members",
       "elevenlabs_use",
       "youth_impact",
+      "address1",
+      "address2",
+      "city",
+      "state",
+      "country",
+      "zip",
     ]) {
       assert.match(submit.html, new RegExp(`name="${name}"`));
     }
