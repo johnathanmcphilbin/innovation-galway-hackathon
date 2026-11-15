@@ -184,7 +184,7 @@ test("submit stays local, review is authenticated, approve pushes once, reject n
       feedback,
     });
     assert.equal(fields["Optional - Override Hours Spent Justification"], expected);
-    assert.equal(fields["Automation - Unified Justification"], expected);
+    assert.equal("Automation - Unified Justification" in fields, false);
     assert.equal(
       fields["Justification - Hackatime Project Name(s) + Date Range(s)"],
       "Voice guide, Innovation Galway hackathon, 21 November 2026",
@@ -199,6 +199,7 @@ test("submit stays local, review is authenticated, approve pushes once, reject n
     );
     assert.match(fields["Justification - Additional Justification"], /one youth tester/);
     for (const blocked of [
+      "Automation - Unified Justification",
       "Automation - Submit to Unified YSWS",
       "Automation - Error",
       "Automation - First Submitted At",

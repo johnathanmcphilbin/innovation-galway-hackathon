@@ -29,7 +29,6 @@ export const APPROVAL_AIRTABLE_FIELDS = [
   ...ALLOWED_AIRTABLE_FIELDS,
   "Optional - Override Hours Spent",
   "Optional - Override Hours Spent Justification",
-  "Automation - Unified Justification",
   "Justification - Hackatime Project Name(s) + Date Range(s)",
   "Justification - Submitter Hackatime ID",
   "Justification - Lapse Links, comma-separated",
@@ -41,6 +40,7 @@ export const APPROVAL_AIRTABLE_FIELDS = [
 /** Airtable automations and Loops fill these. This app never writes them. */
 export const UNTOUCHED_AIRTABLE_FIELDS = [
   "Automation - Submit to Unified YSWS",
+  "Automation - Unified Justification",
   "Automation - Error",
   "Automation - First Submitted At",
   "Automation - Last Updated At",
@@ -136,7 +136,6 @@ export function buildApprovedAirtableFields(row, { includeScreenshotUrl = true }
   const fields = participantFields(row, { includeScreenshotUrl });
   fields["Optional - Override Hours Spent"] = hours;
   fields["Optional - Override Hours Spent Justification"] = justification;
-  fields["Automation - Unified Justification"] = justification;
   putText(fields, "Justification - Hackatime Project Name(s) + Date Range(s)", row.justHackatimeProjects);
   putText(fields, "Justification - Submitter Hackatime ID", row.justHackatimeId);
   putText(fields, "Justification - Lapse Links, comma-separated", row.justLapseLinks);

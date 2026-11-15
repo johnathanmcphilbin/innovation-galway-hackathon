@@ -77,7 +77,6 @@ test("maps an approval onto the YSWS field names and nothing else", () => {
   const fields = buildApprovedAirtableFields(reviewedRow(), { includeScreenshotUrl: true });
   assert.deepEqual(Object.keys(fields).sort(), [
     "Address (Line 1)",
-    "Automation - Unified Justification",
     "Birthday",
     "City",
     "Code URL",
@@ -106,7 +105,7 @@ test("maps an approval onto the YSWS field names and nothing else", () => {
   assert.equal(fields["Optional - Override Hours Spent"], 5.5);
   assert.equal(typeof fields["Optional - Override Hours Spent"], "number");
   assert.equal(fields["Optional - Override Hours Spent Justification"], justification);
-  assert.equal(fields["Automation - Unified Justification"], justification);
+  assert.equal("Automation - Unified Justification" in fields, false);
   assert.equal(
     fields["Justification - Hackatime Project Name(s) + Date Range(s)"],
     "Voice guide, Innovation Galway hackathon, 21 November 2026",
@@ -155,7 +154,7 @@ test("creates one Airtable row, uploads the screenshot, and does not create anot
   const createdFields = JSON.parse(calls[0].options.body).records[0].fields;
   assert.equal("Screenshot" in createdFields, false);
   assert.equal(createdFields["Optional - Override Hours Spent Justification"], justification);
-  assert.equal(createdFields["Automation - Unified Justification"], justification);
+  assert.equal("Automation - Unified Justification" in createdFields, false);
   assert.equal(calls[1].options.method, "POST");
   assert.equal(
     calls[1].url,

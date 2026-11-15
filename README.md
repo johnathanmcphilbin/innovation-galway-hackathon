@@ -37,7 +37,7 @@ On approve, the writer sends these fields and no others:
 - Address (Line 1), Address (Line 2), City, State / Province, Country, ZIP / Postal Code, when present
 - Screenshot, either as an uploaded attachment or `[{ url }]` when the student pasted a link and did not upload a file
 - Optional - Override Hours Spent (the approved hours)
-- Optional - Override Hours Spent Justification, and the same text in Automation - Unified Justification:
+- Optional - Override Hours Spent Justification:
 
 ```
 Innovation Galway review: Approved (<project name>)
@@ -56,9 +56,7 @@ Reviewed at uses Europe/Dublin.
 - Justification - Alternate Tracking Method
 - Justification - Additional Justification (team members, ElevenLabs use, youth impact, extra notes)
 
-It does not write Automation - Submit to Unified YSWS, Automation - Error, Automation - First Submitted At, Automation - Last Updated At, Automation - YSWS Record ID, or any Loops field. It does not create tables or fields, and it does not read or write any other base.
-
-Confirm the base already has the hours and justification fields above, including Automation - Unified Justification. Those names are not created by this app.
+It does not write Automation - Unified Justification (a formula Airtable fills from the other fields), Automation - Submit to Unified YSWS, Automation - Error, Automation - First Submitted At, Automation - Last Updated At, Automation - YSWS Record ID, or any Loops field. It does not create tables or fields, and it does not read or write any other base.
 
 ## Local
 
