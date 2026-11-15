@@ -169,11 +169,25 @@ a:hover {
   color: var(--paper);
 }
 
+.hackclub-flag {
+  position: absolute;
+  top: 0;
+  left: 0.5rem;
+  z-index: 4;
+  line-height: 0;
+}
+
+.hackclub-flag img {
+  display: block;
+  width: auto;
+  height: 4.6rem;
+}
+
 .skip {
   position: absolute;
   left: 1rem;
   top: -4rem;
-  z-index: 5;
+  z-index: 6;
   background: var(--sun);
   color: var(--ink);
   padding: 0.5rem 0.75rem;
@@ -201,7 +215,7 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   gap: 0.25rem 1.5rem;
-  padding: 0.75rem 0;
+  padding: 0.75rem 0 0.75rem 8.5rem;
 }
 
 .wordmark {
@@ -240,14 +254,14 @@ a:hover {
   text-decoration: underline;
 }
 
-.nav a[href="/signup"] {
+.nav a[href="/submit"] {
   padding: 0 0.85rem;
   border-radius: var(--radius);
   background: var(--sun);
   color: var(--ink);
 }
 
-.nav a[href="/signup"]:hover {
+.nav a[href="/submit"]:hover {
   background: var(--paper);
   color: var(--ink);
   text-decoration: none;
@@ -559,7 +573,7 @@ a:hover {
   font-weight: 600;
 }
 
-/* partners: names now; swap each for the partner's own logo file (ink, single colour) */
+/* partner logos keep their own colours and aspect ratios */
 
 .partners {
   list-style: none;
@@ -567,19 +581,34 @@ a:hover {
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem 2.5rem;
-  align-items: baseline;
+  gap: 1.75rem 2.75rem;
+  align-items: center;
 }
 
 .partners li {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.partner-logo {
+  display: block;
+  width: auto;
+  height: auto;
+  max-height: 3.6rem;
+  max-width: min(18rem, 72vw);
+}
+
+.partner-name {
   font-family: var(--font-display);
   font-weight: 800;
   font-style: italic;
   text-transform: uppercase;
   font-size: clamp(1.8rem, 3.6vw, 2.6rem);
   line-height: 0.95;
+  color: var(--ink);
 }
 
 .partners small {
@@ -1017,9 +1046,23 @@ th {
 
 /* ---------- breakpoints */
 
+@media (min-width: 720px) {
+  .hackclub-flag {
+    left: 1rem;
+  }
+
+  .hackclub-flag img {
+    height: 6.5rem;
+  }
+
+  .header-bar {
+    padding-left: 11.25rem;
+  }
+}
+
 @media (max-width: 719px) {
   .header-bar {
-    padding: 0.6rem 0 0.4rem;
+    padding: 0.6rem 0 0.4rem 8.25rem;
   }
 
   .nav {

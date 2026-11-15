@@ -49,7 +49,7 @@ Scale (18px base; tokens in `tokens.css`):
 Text on colour is always solid ink or solid paper. There are no alpha-tinted text colours, gradients, glows or blur.
 
 ## Layout, section by section
-**Header (all pages).** Wordmark in display italic on the left, nav on the right, and "Sign up" as the only yellow pill. On mobile the nav becomes one horizontally scrolling row instead of wrapping onto three lines.
+**Header (all pages).** Wordmark in display italic on the left, nav on the right, and "Submit" as the yellow pill. The hero action is "Send in my project". On mobile the nav becomes one horizontally scrolling row instead of wrapping onto three lines.
 
 **Home: hero.** Asymmetric 7/5 grid. On the left: the title (Innovation / Galway × / ElevenLabs), "Building for the youth" with an inked yellow marker underline, the lede, one blue date line (10am to 6pm · PorterShed, Galway), then the buttons and the facts. The eyebrow date above the H1 is gone. On the right: the hooker sticker, tilted −3°, with "Under 19s" (red) and "Free entry" (yellow) stickers slapped on its corners, plus a hand-lettered note: "Free ElevenLabs credits for everyone!" One inked globe peeks in from the top right as a nod to the poster. On mobile: title, copy and full-width buttons first, then the sticker at about 21rem. The note is hidden there and the globe is smaller.
 
@@ -57,7 +57,16 @@ Text on colour is always solid ink or solid paper. There are no alpha-tinted tex
 
 **Schedule (night).** On desktop a sticky H2 sits on the left, with the time list on the right. Times are in yellow display italic, and TBA is in blue.
 
-**Partners (paper).** "Made possible by". Names run in a wrapping row of display italic for now. **Replace each name with the partner's real logo file, in single-colour ink.** Get them from Eve and Cristian, the ElevenLabs brand kit, and Innovation Ireland, PorterShed and IdeasLab. Don't redraw or approximate any logo.
+**Partners (paper).** "Made possible by". Logos are the organisations' own files, self-hosted under `public/art/partners`, at their original aspect ratios. IdeasLab does not publish a logo, so that name stays as type.
+
+| Partner | File | Source |
+| --- | --- | --- |
+| Innovation Galway | `innovation-ireland.png` (the Innovation Ireland mark) | https://www.innovationireland.org/img/brand/mark.png |
+| ElevenLabs | `elevenlabs.svg` (official black logo) | https://elevenlabs.io/brand and https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-black.svg |
+| IdeasLab | none | No logo file on https://www.universityofgalway.ie/ideaslab/ or the university brand pages. The name stays as text. |
+| PorterShed | `portershed.png` (official red logo, transparent) | https://portershed.com/wp-content/uploads/2022/10/PorterShed-Red-Logo.png |
+
+**Hack Club flag.** Official Orpheus flag, self-hosted at `public/art/flag-orpheus-top.svg`, from https://assets.hackclub.com/flag-orpheus-top.svg (https://hackclub.com/brand). It hangs from the top-left and links to https://hackclub.com.
 
 **FAQ (night).** Sticky H2 on the left, and the questions on the right as 22px sentence-case rows. A yellow "+" turns into "×" when a row is open. The native triangle marker is gone.
 

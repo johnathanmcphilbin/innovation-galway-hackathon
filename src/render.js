@@ -1,5 +1,4 @@
-import { EVENT, TSHIRT_SIZES, airtableReviewUrl } from "./constants.js";
-import { ageOn } from "./validate.js";
+import { EVENT, airtableReviewUrl } from "./constants.js";
 
 export function escapeHtml(value) {
   return String(value ?? "")
@@ -20,7 +19,6 @@ const NAV = [
   ["/#partners", "Partners"],
   ["/#faq", "FAQ"],
   ["/#location", "Location"],
-  ["/signup", "Sign up"],
   ["/submit", "Submit"],
 ];
 
@@ -54,6 +52,9 @@ function layout({ title, description, path, body, robots, script = false }) {
 </head>
 <body>
   <a class="skip" href="#content">Skip to content</a>
+  <a class="hackclub-flag" href="https://hackclub.com">
+    <img src="/art/flag-orpheus-top.svg" alt="Hack Club" width="280" height="158">
+  </a>
   <header class="site-header">
     <div class="wrap header-bar">
       <a class="wordmark" href="/">Innovation Galway <span aria-hidden="true">×</span> ElevenLabs</a>
@@ -133,28 +134,15 @@ function field({
   </div>`;
 }
 
-function shirtField(value, error) {
-  const options = TSHIRT_SIZES.map(
-    (size) => `<label class="choice">
-      <input type="radio" name="tshirt_size" value="${size}"${value === size ? " checked" : ""} required>
-      <span>${size}</span>
-    </label>`,
-  ).join("");
-  return `<fieldset class="choices-field" id="tshirt_size">
-    <legend>T-shirt size <span class="req">Required</span></legend>
-    <div class="choices"${error ? ' aria-invalid="true" aria-describedby="tshirt_size-error"' : ""}>${options}</div>
-    ${error ? `<p class="field-error" id="tshirt_size-error">${escapeHtml(error)}</p>` : ""}
-  </fieldset>`;
-}
-
 export function renderHome() {
   const partners = EVENT.partners
-    .map(
-      (partner) =>
-        `<li><span>${escapeHtml(partner.name)}</span>${
-          partner.note ? `<small>${escapeHtml(partner.note)}</small>` : ""
-        }</li>`,
-    )
+    .map((partner) => {
+      const mark = partner.logo
+        ? `<img class="partner-logo" src="${escapeHtml(partner.logo)}" alt="${escapeHtml(partner.name)}" width="${partner.logoWidth}" height="${partner.logoHeight}">`
+        : `<span class="partner-name">${escapeHtml(partner.name)}</span>`;
+      const note = partner.note ? `<small>${escapeHtml(partner.note)}</small>` : "";
+      return `<li>${mark}${note}</li>`;
+    })
     .join("");
 
   const faqs = [
@@ -174,16 +162,8 @@ export function renderHome() {
       `Hosted by ${EVENT.hosts.join(" and ")}, with Innovation Galway (Innovation Ireland), ElevenLabs, IdeasLab, and PorterShed.`,
     ],
     [
-      "I will be under 18. What do you need?",
-      "A parent or guardian's name, email, and phone number on the sign-up form.",
-    ],
-    [
-      "Will there be photos?",
-      "Only if you opt in. Photo consent is a checkbox on the sign-up form, and you can attend without ticking it.",
-    ],
-    [
       "How do I submit a project?",
-      "Sign up first, then use the submit page with the same email. You will need a code link, a playable link, a hosted screenshot link, and a description that includes your team, how you used ElevenLabs, and how the project helps young people.",
+      "Use the submit page. You will need a code link, a playable link, a hosted screenshot link, and a description that includes your team, how you used ElevenLabs, and how the project helps young people.",
     ],
     [
       "Where is the schedule?",
@@ -210,8 +190,7 @@ export function renderHome() {
           <p class="lede">${escapeHtml(EVENT.line)} One day of building things that talk, listen and help, at ${escapeHtml(EVENT.venue)} in ${escapeHtml(EVENT.city)}.</p>
           <p class="when"><time datetime="${EVENT.dateISO}">${escapeHtml(EVENT.dateLabel)}</time><span aria-hidden="true"> · </span><time datetime="${EVENT.dateISO}T10:00">10am</time> to <time datetime="${EVENT.dateISO}T18:00">6pm</time><span aria-hidden="true"> · </span>${escapeHtml(EVENT.venue)}, ${escapeHtml(EVENT.city)}</p>
           <div class="actions">
-            <a class="button" href="/signup">Sign up, it's free</a>
-            <a class="button secondary" href="/submit">Submit your project</a>
+            <a class="button" href="/submit">Send in my project</a>
           </div>
           <p class="facts">Free to attend. ElevenLabs credits for every participant. Main prizes TBA.</p>
         </div>
@@ -301,62 +280,6 @@ function formShell({ path, title, lede, form }) {
   });
 }
 
-export function renderSignup({ values, errors = [], formError = "" }) {
-  const err = (field) => errorFor(errors, field);
-  const form = `<form class="form" method="post" action="/signup" novalidate>
-    ${formBanner(formError)}
-    ${errorSummary(errors)}
-    <fieldset>
-      <legend>You</legend>
-      ${field({ id: "first_name", name: "first_name", label: "First name", value: values.first_name, required: true, autocomplete: "given-name", error: err("first_name"), maxlength: 80 })}
-      ${field({ id: "last_name", name: "last_name", label: "Last name", value: values.last_name, required: true, autocomplete: "family-name", error: err("last_name"), maxlength: 80 })}
-      ${field({ id: "email", name: "email", type: "email", label: "Email", value: values.email, required: true, autocomplete: "email", inputmode: "email", error: err("email"), maxlength: 254 })}
-      ${field({ id: "date_of_birth", name: "date_of_birth", type: "date", label: "Date of birth", value: values.date_of_birth, required: true, autocomplete: "bday", min: "2006-11-22", max: "2026-11-21", error: err("date_of_birth"), hint: "You need to be 19 or under on 21 November 2026." })}
-      ${field({ id: "school", name: "school", label: "School", value: values.school, required: true, autocomplete: "organization", error: err("school"), maxlength: 160 })}
-      ${shirtField(values.tshirt_size, err("tshirt_size"))}
-    </fieldset>
-    <fieldset>
-      <legend>Parent or guardian</legend>
-      <p class="hint">Required if you will be under 18 on 21 November 2026. Leave this blank if you will be 18 or 19.</p>
-      ${field({ id: "guardian_name", name: "guardian_name", label: "Parent or guardian name", value: values.guardian_name, autocomplete: "section-guardian name", error: err("guardian_name"), maxlength: 80 })}
-      ${field({ id: "guardian_email", name: "guardian_email", type: "email", label: "Parent or guardian email", value: values.guardian_email, autocomplete: "section-guardian email", inputmode: "email", error: err("guardian_email"), maxlength: 254 })}
-      ${field({ id: "guardian_phone", name: "guardian_phone", type: "tel", label: "Parent or guardian phone", value: values.guardian_phone, autocomplete: "section-guardian tel", inputmode: "tel", error: err("guardian_phone"), maxlength: 30 })}
-    </fieldset>
-    <fieldset>
-      <legend>The day</legend>
-      ${field({ id: "dietary_needs", name: "dietary_needs", label: "Dietary needs", value: values.dietary_needs, error: err("dietary_needs"), maxlength: 400 })}
-      ${field({ id: "allergies", name: "allergies", label: "Allergies", value: values.allergies, error: err("allergies"), maxlength: 400 })}
-      ${field({ id: "how_heard", name: "how_heard", label: "How did you hear about this?", value: values.how_heard, error: err("how_heard"), maxlength: 300 })}
-      <label class="check">
-        <input type="checkbox" name="photo_consent" value="yes"${values.photo_consent ? " checked" : ""}>
-        <span>I agree to being photographed at the event, and to the organisers using those photos to document the hackathon.</span>
-      </label>
-    </fieldset>
-    <button class="button" type="submit">Sign me up</button>
-  </form>`;
-
-  return formShell({
-    path: "/signup",
-    title: "Sign up",
-    lede: `<p>Students aged 19 and under. Free. ${escapeHtml(EVENT.dateLabel)}, ${escapeHtml(EVENT.venue)}, ${escapeHtml(EVENT.city)}.</p>
-      <p>Already signed up? <a href="/submit">Submit a project</a> with the same email.</p>`,
-    form,
-  });
-}
-
-export function renderSignupThanks() {
-  return layout({
-    title: "You're signed up",
-    path: "/signup",
-    body: `<div class="wrap status-page">
-      <p class="kicker">Sign up</p>
-      <h1>You're signed up.</h1>
-      <p class="lede">${escapeHtml(EVENT.dateLabel)}, 10am to 6pm, ${escapeHtml(EVENT.venue)}, ${escapeHtml(EVENT.street)}, ${escapeHtml(EVENT.city)}.</p>
-      <p><a class="button" href="/submit">Submit a project</a></p>
-    </div>`,
-  });
-}
-
 export function renderSubmit({ values, errors = [], formError = "" }) {
   const err = (field) => errorFor(errors, field);
   const addressOpen = ["address1", "address2", "city", "state", "country", "zip"].some(
@@ -369,7 +292,7 @@ export function renderSubmit({ values, errors = [], formError = "" }) {
       <legend>You</legend>
       ${field({ id: "first_name", name: "first_name", label: "First name", value: values.first_name, required: true, autocomplete: "given-name", error: err("first_name"), maxlength: 80 })}
       ${field({ id: "last_name", name: "last_name", label: "Last name", value: values.last_name, required: true, autocomplete: "family-name", error: err("last_name"), maxlength: 80 })}
-      ${field({ id: "email", name: "email", type: "email", label: "Email", value: values.email, required: true, autocomplete: "email", inputmode: "email", error: err("email"), hint: "The same email you used to sign up.", maxlength: 254 })}
+      ${field({ id: "email", name: "email", type: "email", label: "Email", value: values.email, required: true, autocomplete: "email", inputmode: "email", error: err("email"), maxlength: 254 })}
       ${field({ id: "birthday", name: "birthday", type: "date", label: "Birthday", value: values.birthday, required: true, autocomplete: "bday", error: err("birthday") })}
       ${field({ id: "github_username", name: "github_username", label: "GitHub username", value: values.github_username, required: true, autocomplete: "username", error: err("github_username"), hint: "A username, or a github.com profile link." })}
     </fieldset>
@@ -407,8 +330,7 @@ export function renderSubmit({ values, errors = [], formError = "" }) {
   return formShell({
     path: "/submit",
     title: "Submit a project",
-    lede: `<p>Use the email from your sign-up. Projects are reviewed by the organisers.</p>
-      <p>Not signed up yet? <a href="/signup">Sign up first</a>.</p>`,
+    lede: `<p>Projects are reviewed by the organisers.</p>`,
     form,
   });
 }
@@ -424,17 +346,6 @@ export function renderSubmitThanks() {
       <p><a href="/">Back to the event</a></p>
     </div>`,
   });
-}
-
-function formatWhen(value) {
-  return new Intl.DateTimeFormat("en-IE", {
-    timeZone: "Europe/Dublin",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 }
 
 export function renderAdminLogin({ error = "" }) {
@@ -461,84 +372,21 @@ export function renderAdminLogin({ error = "" }) {
   });
 }
 
-export function renderAdmin({ rows, dbError = "" }) {
+export function renderAdmin() {
   const reviewUrl = airtableReviewUrl();
-  let summary = "";
-  let table = "";
-  if (dbError) {
-    summary = `<p class="lede">${escapeHtml(dbError)}</p>`;
-  } else {
-    const under18 = rows.filter((row) => ageOn(String(row.date_of_birth).slice(0, 10)) < 18).length;
-    const photos = rows.filter((row) => row.photo_consent).length;
-    summary = `<p class="count">${rows.length} signed up <span>· ${under18} under 18 · ${photos} photo consent</span></p>`;
-    if (rows.length === 0) {
-      table = `<p class="lede">No sign-ups yet.</p>`;
-    } else {
-      const bodyRows = rows
-        .map((row) => {
-          const dob = String(row.date_of_birth).slice(0, 10);
-          const cells = [
-            row.first_name,
-            row.last_name,
-            row.email,
-            dob,
-            String(ageOn(dob)),
-            row.school,
-            row.tshirt_size,
-            row.dietary_needs || "—",
-            row.allergies || "—",
-            row.guardian_name || "—",
-            row.guardian_email || "—",
-            row.guardian_phone || "—",
-            row.photo_consent ? "Yes" : "No",
-            row.how_heard || "—",
-            formatWhen(row.created_at),
-          ];
-          return `<tr>${cells.map((value) => `<td>${escapeHtml(value)}</td>`).join("")}</tr>`;
-        })
-        .join("");
-      table = `<div class="table-wrap">
-        <table>
-          <caption class="vh">Sign-ups</caption>
-          <thead><tr>
-            <th scope="col">First</th>
-            <th scope="col">Last</th>
-            <th scope="col">Email</th>
-            <th scope="col">Born</th>
-            <th scope="col">Age</th>
-            <th scope="col">School</th>
-            <th scope="col">Shirt</th>
-            <th scope="col">Diet</th>
-            <th scope="col">Allergies</th>
-            <th scope="col">Guardian</th>
-            <th scope="col">Guardian email</th>
-            <th scope="col">Guardian phone</th>
-            <th scope="col">Photo</th>
-            <th scope="col">Heard</th>
-            <th scope="col">Signed up</th>
-          </tr></thead>
-          <tbody>${bodyRows}</tbody>
-        </table>
-      </div>`;
-    }
-  }
-
   return layout({
-    title: "Sign-ups",
+    title: "Admin",
     path: "/admin",
     robots: "noindex",
     body: `<div class="wrap admin-page">
       <div class="admin-head">
-        <h1>Sign-ups</h1>
+        <h1>Submissions</h1>
         <form method="post" action="/admin/logout"><button class="text-button" type="submit">Log out</button></form>
       </div>
-      ${summary}
+      <p class="lede">Projects are reviewed in Airtable.</p>
       <p class="admin-actions">
-        ${dbError ? "" : '<a class="button" href="/admin/export.csv">Export CSV</a>'}
-        <a class="button secondary" href="${escapeHtml(reviewUrl)}">Review submissions in Airtable</a>
+        <a class="button" href="${escapeHtml(reviewUrl)}">Review submissions in Airtable</a>
       </p>
-      <p class="hint">Submissions are reviewed in Airtable, not here. Sign-ups stay in Postgres.</p>
-      ${table}
     </div>`,
   });
 }

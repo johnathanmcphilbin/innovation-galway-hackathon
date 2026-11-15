@@ -3,20 +3,17 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { adminCookieValue, isAdminRequest, passwordMatches } from "./auth.js";
 import { submitToAirtable } from "./airtable.js";
-import { signupsToCsv } from "./csv.js";
-import { closePool, findSignupByEmail, insertSignup, isDbUnavailable, listSignups, migrate } from "./db.js";
+import { closePool, migrate } from "./db.js";
 import { createRateLimiter } from "./rate-limit.js";
 import {
   renderAdmin,
   renderAdminLogin,
   renderHome,
-  renderSignup,
-  renderSignupThanks,
   renderStatus,
   renderSubmit,
   renderSubmitThanks,
 } from "./render.js";
-import { emptySignupValues, emptySubmissionValues, validateSignup, validateSubmission } from "./validate.js";
+import { emptySubmissionValues, validateSubmission } from "./validate.js";
 
 const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
 
@@ -41,7 +38,6 @@ function asyncRoute(handler) {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 }
 
-const signupLimit = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 8 });
 const submitLimit = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 8 });
 const loginLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 5 });
 
@@ -62,65 +58,12 @@ app.get("/", (_req, res) => {
   res.type("html").send(renderHome());
 });
 
-app.get("/signup", (_req, res) => {
-  res.type("html").send(renderSignup({ values: emptySignupValues() }));
+app.get(["/signup", "/signup/thanks"], (_req, res) => {
+  res.redirect(302, "/");
 });
 
-app.post(
-  "/signup",
-  asyncRoute(async (req, res) => {
-    if (!signupLimit(`signup:${req.ip}`)) {
-      tooMany(res, {
-        title: "Slow down",
-        heading: "Too many sign-ups from this connection",
-        text: "Wait about ten minutes, then send the form again.",
-        path: "/signup",
-      });
-      return;
-    }
-
-    const result = validateSignup(req.body);
-    if (!result.ok) {
-      res.status(422).type("html").send(renderSignup({ values: result.values, errors: result.errors }));
-      return;
-    }
-
-    try {
-      await insertSignup(result.value);
-    } catch (error) {
-      if (error.code === "DUPLICATE_EMAIL") {
-        res.status(409).type("html").send(
-          renderSignup({
-            values: result.values,
-            errors: [
-              {
-                field: "email",
-                message: "That email is already signed up. Use it on the submit page if the project is yours.",
-              },
-            ],
-          }),
-        );
-        return;
-      }
-      if (isDbUnavailable(error)) {
-        console.error(`Signup unavailable (${error.code})`);
-        res.status(503).type("html").send(
-          renderSignup({
-            values: result.values,
-            formError: "Sign-up is not available right now because the database is not connected. Nothing was saved.",
-          }),
-        );
-        return;
-      }
-      throw error;
-    }
-
-    res.redirect(303, "/signup/thanks");
-  }),
-);
-
-app.get("/signup/thanks", (_req, res) => {
-  res.type("html").send(renderSignupThanks());
+app.post("/signup", (_req, res) => {
+  res.redirect(303, "/");
 });
 
 app.get("/submit", (_req, res) => {
@@ -144,37 +87,6 @@ app.post(
     if (!result.ok) {
       res.status(422).type("html").send(renderSubmit({ values: result.values, errors: result.errors }));
       return;
-    }
-
-    try {
-      const existing = await findSignupByEmail(result.value.email);
-      if (!existing) {
-        res.status(422).type("html").send(
-          renderSubmit({
-            values: result.values,
-            errors: [
-              {
-                field: "email",
-                message: "Sign up with this email before submitting a project.",
-              },
-            ],
-          }),
-        );
-        return;
-      }
-    } catch (error) {
-      if (isDbUnavailable(error)) {
-        console.error(`Submit lookup unavailable (${error.code})`);
-        res.status(503).type("html").send(
-          renderSubmit({
-            values: result.values,
-            formError:
-              "We can't check sign-ups right now because the database is not connected. Nothing was submitted.",
-          }),
-        );
-        return;
-      }
-      throw error;
     }
 
     try {
@@ -206,21 +118,7 @@ app.get(
       res.type("html").send(renderAdminLogin({}));
       return;
     }
-    try {
-      const rows = await listSignups();
-      res.type("html").send(renderAdmin({ rows }));
-    } catch (error) {
-      if (isDbUnavailable(error)) {
-        res.status(503).type("html").send(
-          renderAdmin({
-            rows: [],
-            dbError: "The database is not connected, so sign-ups cannot be listed.",
-          }),
-        );
-        return;
-      }
-      throw error;
-    }
+    res.type("html").send(renderAdmin());
   }),
 );
 
@@ -252,37 +150,12 @@ app.post("/admin/logout", (req, res) => {
   res.redirect(303, "/admin");
 });
 
-app.get(
-  "/admin/export.csv",
-  asyncRoute(async (req, res) => {
-    if (!isAdminRequest(req)) {
-      res.redirect(303, "/admin");
-      return;
-    }
-    try {
-      const rows = await listSignups();
-      res.set({
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": 'attachment; filename="innovation-galway-signups.csv"',
-        "Cache-Control": "no-store",
-      });
-      res.send(signupsToCsv(rows));
-    } catch (error) {
-      if (isDbUnavailable(error)) {
-        res.status(503).type("text/plain").send("Database is not connected.");
-        return;
-      }
-      throw error;
-    }
-  }),
-);
-
 app.use((_req, res) => {
   res.status(404).type("html").send(
     renderStatus({
       title: "Not found",
       heading: "That page is not on the programme.",
-      text: "The event page, sign-up, and project form are the pages that exist.",
+      text: "The event page and the project form are the pages that exist.",
     }),
   );
 });

@@ -84,7 +84,7 @@ async function requirePool() {
 
 export async function migrate() {
   if (!process.env.DATABASE_URL) {
-    console.warn("DATABASE_URL is not set. Pages will load; sign-up stays disabled until it is.");
+    console.warn("DATABASE_URL is not set. The app runs without it.");
     return;
   }
   const delays = [0, 1000, 2000, 3000, 5000, 5000, 5000];
