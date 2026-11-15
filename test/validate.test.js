@@ -106,9 +106,23 @@ test("accepts a project submission and keeps optional address empty", () => {
   assert.equal(result.ok, true, JSON.stringify(result.errors));
   assert.equal(result.value.email, "cristian@example.com");
   assert.equal(result.value.githubUsername, "cristian");
+  assert.equal(result.value.projectName, "project");
+  assert.equal(result.value.hackatimeId, null);
   assert.equal(result.value.address1, null);
   assert.equal(result.value.city, "Galway");
   assert.equal(result.value.birthday, "2008-04-02");
+});
+
+test("accepts an uploaded screenshot without a screenshot URL", () => {
+  const result = validateSubmission({ ...project, screenshot_url: "" }, { hasScreenshot: true });
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  assert.equal(result.value.screenshotUrl, null);
+});
+
+test("requires a screenshot file or a public screenshot URL", () => {
+  const result = validateSubmission({ ...project, screenshot_url: "" });
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((error) => error.field === "screenshot"));
 });
 
 test("reads a GitHub profile URL as a username", () => {
