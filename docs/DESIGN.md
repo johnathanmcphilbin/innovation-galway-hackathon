@@ -72,11 +72,11 @@ Text on colour is always solid ink or solid paper. There are no alpha-tinted tex
 
 **Location.** "Find us at PorterShed", the address in big display italic, and an outlined "Open the map" button.
 
-**Footer.** A full-width inked waveform rule (`wave-rule.svg`), then hosts, date and Admin.
+**Footer.** A full-width inked waveform rule (`wave-rule.svg`), then hosts and date.
 
 **Sign up and Submit.** Desktop keeps the sticky intro column, with the voice-bubble sticker replacing the vector globe. Fields are boxed: 2px border, 10px radius, `--night-2` fill, yellow caret, blue focus border, and a pink border when invalid. That makes them easier to hit on phones than the current underline-only inputs. T-shirt sizes are chunky chips that turn into a tilted yellow sticker when picked. The submit button is yellow. It's left-aligned at 14rem minimum on desktop and full-width on mobile.
 
-**Status and admin pages.** These inherit the tokens. There are no layout changes.
+**Status pages.** These inherit the tokens. There are no layout changes.
 
 ## Illustration and assets (all in `art/`, also in the patch under `public/art/`)
 Hand-written SVG built by `src/art.py`. It reuses the HackCast ink helpers (`/workspace/hackcast-sampler-retro/src/ink.py`, `hand.py`). There are no filters or gradients, and the lettering is paths.

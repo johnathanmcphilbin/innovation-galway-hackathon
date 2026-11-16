@@ -148,11 +148,28 @@ test("public pages render the event and the forms", async () => {
     assert.doesNotMatch(rejectedHtml, /sign up/i);
     assert.doesNotMatch(rejectedHtml, /slack/i);
 
-    const admin = await get("/admin");
-    assert.equal(admin.status, 200);
-    assert.match(admin.html, /name="password"/);
-    assert.match(admin.html, /noindex/);
-    assert.doesNotMatch(admin.html, /export\.csv/);
+    assert.doesNotMatch(home.html, /\/admin/);
+    assert.doesNotMatch(submit.html, /\/admin/);
+    assert.doesNotMatch(home.html, /type="password"/);
+    for (const [method, route] of [
+      ["GET", "/admin"],
+      ["GET", "/admin/submissions/1"],
+      ["GET", "/admin/submissions/1/screenshot"],
+      ["POST", "/admin/login"],
+      ["POST", "/admin/logout"],
+      ["POST", "/admin/submissions/1"],
+      ["POST", "/admin/submissions/1/delete"],
+    ]) {
+      const res = await fetch(`http://127.0.0.1:${port}${route}`, {
+        method,
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: method === "POST" ? "password=x&decision=approve" : undefined,
+        redirect: "manual",
+      });
+      assert.equal(res.status, 404, `${method} ${route}`);
+      const html = await res.text();
+      assert.doesNotMatch(html, /type="password"/);
+    }
 
     assert.match(home.html, /styles\.css\?v=[0-9a-f]{12}/);
     assert.match(home.html, /portershed-wordmark\.png\?v=[0-9a-f]{12}/);
