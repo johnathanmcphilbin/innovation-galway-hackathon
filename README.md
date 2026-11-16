@@ -2,7 +2,7 @@
 
 Site for the student hackathon at PorterShed, Galway, on Saturday 21 November 2026, 10am–6pm.
 
-Project submissions are saved in Postgres and reviewed at `/admin`. Approving one writes it to the Hack Club YSWS Airtable table. The site does not take sign-ups. There is no Slack integration.
+Project submissions are saved in Postgres. The site has no admin area and no login. Review happens outside the site. The Airtable helpers in `src/airtable.js` are kept but no public route calls them. The site does not take sign-ups. There is no Slack integration.
 
 ## Stack
 
@@ -12,7 +12,6 @@ Node 22, Express, server-rendered HTML, and `pg`. One process. `npm start` liste
 
 - `/` submission page: challenge, how to ship the project, partners
 - `/submit` project submission, saved locally until a reviewer approves it. Screenshot upload or a public image URL.
-- `/admin` password gate, the pending list, and approve or reject. `ADMIN_PASSWORD` protects it, including the screenshot.
 
 ## Environment
 
@@ -24,10 +23,9 @@ Copy `.env.example` to `.env` for local development.
 | `AIRTABLE_API_KEY` | Token that can create records in this base and nowhere else. |
 | `AIRTABLE_BASE_ID` | `appInkJZdtOT67t8l` |
 | `AIRTABLE_TABLE` | `YSWS Project Submission` (table id `tbloBMHxgUSH9zrkg`) |
-| `ADMIN_PASSWORD` | Password for `/admin`. |
 | `PORT` | Set by Orchard. Local default is `3000`. |
 
-`/submit` does not call Airtable. It stores the form, and any uploaded screenshot (PNG, JPEG, WebP, or GIF, 5 MB, checked by magic bytes, memory only), in `submissions` with status `pending`. Rejecting a project never calls Airtable. Approving it writes one row, then uploads the screenshot with `uploadAttachment` when the student sent a file. A second approve, or a retry after a successful push, does not create another row. If the screenshot upload fails on a row this app just created, that row is deleted when Airtable allows it.
+`/submit` does not call Airtable. It stores the form, and any uploaded screenshot (PNG, JPEG, WebP, or GIF, 5 MB, checked by magic bytes, memory only), in `submissions` with status `pending`. No route on the site reads submissions back out, shows a screenshot, or writes to Airtable. Any `/admin` path returns 404.
 
 Address fields are omitted when the student leaves them blank. Birthday is required. A project name is optional; the review form prefills it from the name they typed, or from the GitHub repository name.
 
@@ -73,8 +71,8 @@ Submit and review need `DATABASE_URL`. Approve also needs the Airtable variables
 Orchard builds this repository from GitHub with Railpack. Node 22 is pinned in `package.json` (`engines`) and `.node-version`.
 
 1. Push the repository to GitHub and create one Orchard service from it. Start command: `npm start`. The process listens on `0.0.0.0` and `PORT`.
-2. Set `DATABASE_URL`, `AIRTABLE_API_KEY`, `AIRTABLE_BASE_ID=appInkJZdtOT67t8l`, `AIRTABLE_TABLE=YSWS Project Submission`, and `ADMIN_PASSWORD`.
+2. Set `DATABASE_URL`, `AIRTABLE_API_KEY`, `AIRTABLE_BASE_ID=appInkJZdtOT67t8l`, `AIRTABLE_TABLE=YSWS Project Submission`.
 3. Deploy. The migration runs on boot and can run again safely. It does not drop tables.
-4. Open the service URL. Review projects at `/admin`. The YSWS table is https://airtable.com/appInkJZdtOT67t8l/tbloBMHxgUSH9zrkg
+4. Open the service URL. The YSWS table is https://airtable.com/appInkJZdtOT67t8l/tbloBMHxgUSH9zrkg
 
 Rate limits are in memory, which matches a single service. `/signup` redirects to the home page.
