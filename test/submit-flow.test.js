@@ -104,7 +104,8 @@ test("submissions and screenshots stay in Postgres and nothing reaches Airtable"
         body: method === "POST" ? "decision=approve&approved_hours=5" : undefined,
         redirect: "manual",
       });
-      assert.equal(res.status, 404, `${method} ${route}`);
+      assert.equal(res.status, method === "GET" ? 302 : 303, `${method} ${route}`);
+      assert.equal(new URL(res.headers.get("location"), base).pathname, "/submit");
       const text = await res.text();
       assert.doesNotMatch(text, /Voice guide/);
     }

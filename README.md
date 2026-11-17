@@ -10,8 +10,8 @@ Node 22, Express, server-rendered HTML, and `pg`. One process. `npm start` liste
 
 ## Pages
 
-- `/` submission page: challenge, how to ship the project, partners
-- `/submit` project submission, saved locally until a reviewer approves it. Screenshot upload or a public image URL.
+- `/` and `/submit` are the same page: the event title and the project form. Screenshot upload or a public image URL. The project is saved in Postgres.
+- Any other public path redirects to `/submit`. `/submit/thanks` is the success page.
 
 ## Environment
 
@@ -75,4 +75,4 @@ Orchard builds this repository from GitHub with Railpack. Node 22 is pinned in `
 3. Deploy. The migration runs on boot and can run again safely. It does not drop tables.
 4. Open the service URL. The YSWS table is https://airtable.com/appInkJZdtOT67t8l/tbloBMHxgUSH9zrkg
 
-Rate limits are in memory, which matches a single service. `/signup` redirects to the home page.
+Rate limits are in memory, which matches a single service. Paths other than the form and its thanks page redirect to `/submit`.

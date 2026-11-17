@@ -5,14 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const HASHED_FILES = [
-  "public/styles.css",
-  "public/form.js",
-  "public/art/flag-orpheus-top.svg",
-  "public/art/partners/elevenlabs.svg",
-  "public/art/partners/innovation-ireland.png",
-  "public/art/partners/portershed-wordmark.png",
-];
+const HASHED_FILES = ["public/styles.css", "public/form.js"];
 
 function computeAssetVersion() {
   const hash = createHash("sha256");
