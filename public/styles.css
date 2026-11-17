@@ -1,9 +1,23 @@
+:root {
+  --night: #070a14;
+  --night-2: #10172b;
+  --rule: #2a3a5c;
+  --paper: #eef3fb;
+  --ink: #0b0f1a;
+  --body: #dbe5f3;
+  --blue: #8ec4ff;
+  --sun: #ffcf3d;
+  --danger: #ffb4bd;
+  --radius: 10px;
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
-  color: #1a1a1a;
-  background: #fff;
+  color: var(--body);
+  background: var(--night);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 1rem;
+  font-size: 1.125rem;
   line-height: 1.5;
 }
 
@@ -16,6 +30,7 @@ main {
 
 h1 {
   margin: 0 0 1.5rem;
+  color: var(--paper);
   font-size: 1.75rem;
   font-weight: 650;
   line-height: 1.2;
@@ -26,7 +41,12 @@ p {
 }
 
 a {
-  color: #0b57d0;
+  color: var(--blue);
+}
+
+::selection {
+  background: var(--sun);
+  color: var(--ink);
 }
 
 fieldset {
@@ -37,6 +57,7 @@ fieldset {
 
 legend {
   margin: 0 0 0.75rem;
+  color: var(--paper);
   font-weight: 700;
 }
 
@@ -47,12 +68,17 @@ legend {
 label {
   display: block;
   margin-bottom: 0.25rem;
+  color: var(--paper);
   font-weight: 600;
 }
 
 .req {
-  font-weight: 500;
-  color: #555;
+  margin-left: 0.35rem;
+  color: var(--blue);
+  font-size: 0.85rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 input,
@@ -65,10 +91,12 @@ input,
 textarea {
   box-sizing: border-box;
   width: 100%;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid #bbb;
-  border-radius: 4px;
-  background: #fff;
+  padding: 0.7rem 0.85rem;
+  border: 2px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--night-2);
+  color: var(--paper);
+  caret-color: var(--sun);
 }
 
 textarea {
@@ -76,53 +104,71 @@ textarea {
   resize: vertical;
 }
 
+input:hover,
+textarea:hover {
+  border-color: #3d5583;
+}
+
 input:focus,
 textarea:focus {
-  outline: 2px solid #0b57d0;
-  outline-offset: 1px;
+  border-color: var(--blue);
+  outline: 3px solid var(--sun);
+  outline-offset: 2px;
 }
 
 input[aria-invalid="true"],
 textarea[aria-invalid="true"] {
-  border-color: #9b1c1c;
+  border-color: var(--danger);
 }
 
 .hint {
   margin: 0.25rem 0 0;
-  color: #444;
-  font-size: 0.9rem;
+  color: var(--body);
+  font-size: 0.9375rem;
 }
 
 .field-error {
   margin: 0.25rem 0 0;
-  color: #9b1c1c;
-  font-size: 0.9rem;
+  color: var(--danger);
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
 
 .error-summary {
   margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e7b3b3;
-  border-radius: 4px;
-  background: #fff4f4;
-  color: #9b1c1c;
+  padding: 1rem 1.15rem;
+  border: 2px solid var(--danger);
+  border-radius: var(--radius);
+  color: var(--danger);
 }
 
 .error-summary p {
   margin: 0 0 0.5rem;
+  color: var(--danger);
+  font-weight: 600;
 }
 
 .error-summary p:last-child {
   margin-bottom: 0;
 }
 
+.error-summary a {
+  color: var(--danger);
+}
+
 .button {
-  padding: 0.6rem 1rem;
-  border: 0;
-  border-radius: 4px;
-  background: #111;
-  color: #fff;
+  padding: 0.65rem 1.2rem;
+  border: 2px solid var(--sun);
+  border-radius: var(--radius);
+  background: var(--sun);
+  color: var(--ink);
+  font-weight: 650;
   cursor: pointer;
+}
+
+.button:hover {
+  background: var(--paper);
+  border-color: var(--paper);
 }
 
 .button:disabled {
@@ -132,10 +178,13 @@ textarea[aria-invalid="true"] {
 
 details {
   margin: 0 0 1.5rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--rule);
 }
 
 summary {
   margin-bottom: 0.75rem;
+  color: var(--paper);
   cursor: pointer;
   font-weight: 600;
 }
