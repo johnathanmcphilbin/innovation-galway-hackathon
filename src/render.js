@@ -1,5 +1,4 @@
 import { asset } from "./assets.js";
-import { EVENT } from "./constants.js";
 
 export function escapeHtml(value) {
   return String(value ?? "")
@@ -14,60 +13,22 @@ function errorFor(errors, field) {
   return errors?.find((error) => error.field === field)?.message || "";
 }
 
-const NAV = [
-  ["/#challenge", "Challenge"],
-  ["/#guides", "Guides"],
-  ["/#partners", "Partners"],
-  ["/submit", "Submit"],
-];
-
-function layout({ title, description, path, body, robots, script = false }) {
+function layout({ title, body, robots, script = false }) {
   const pageTitle = title.includes("ElevenLabs")
     ? title
     : `${title} · Innovation Galway × ElevenLabs`;
-  const desc =
-    description ||
-    "Send in your Innovation Galway × ElevenLabs project. You need a GitHub link and a page someone can open.";
-  const nav = NAV.map(([href, label]) => {
-    const current =
-      !href.startsWith("/#") && (path === href || path.startsWith(`${href}/`))
-        ? ' aria-current="page"'
-        : "";
-    return `<a href="${href}"${current}>${label}</a>`;
-  }).join("");
-
   return `<!DOCTYPE html>
-<html lang="en-IE">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(pageTitle)}</title>
-  <meta name="description" content="${escapeHtml(desc)}">
-  <meta name="theme-color" content="#070a14">
+  <meta name="description" content="Send in a project for Innovation Galway × ElevenLabs.">
   ${robots ? `<meta name="robots" content="${escapeHtml(robots)}">` : ""}
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="preload" href="${asset("/fonts/barlow-condensed-800-italic.woff2")}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="${asset("/styles.css")}">
 </head>
 <body>
-  <a class="skip" href="#content">Skip to content</a>
-  <a class="hackclub-flag" href="https://hackclub.com">
-    <img src="${asset("/art/flag-orpheus-top.svg")}" alt="Hack Club" width="280" height="158">
-  </a>
-  <header class="site-header">
-    <div class="wrap header-bar">
-      <a class="wordmark" href="/">Innovation Galway <span aria-hidden="true">×</span> ElevenLabs</a>
-      <nav class="nav" aria-label="Primary">${nav}</nav>
-    </div>
-  </header>
   <main id="content">${body}</main>
-  <footer class="site-footer">
-    <img class="footer-rule" src="${asset("/art/wave-rule.svg")}" alt="">
-    <div class="wrap footer-bar">
-      <p>Hosted by ${escapeHtml(EVENT.hosts.join(" and "))}.</p>
-      <p>${escapeHtml(EVENT.dateLabel)}, ${EVENT.start}–${EVENT.end}, ${escapeHtml(EVENT.venue)}, ${escapeHtml(EVENT.city)}.</p>
-    </div>
-  </footer>
   ${script ? `<script src="${asset("/form.js")}" defer></script>` : ""}
 </body>
 </html>`;
@@ -136,131 +97,6 @@ function field({
   </div>`;
 }
 
-export function renderHome() {
-  const partners = EVENT.partners
-    .map((partner) => {
-      if (partner.logo && partner.note) {
-        return `<li><span class="partner-lockup"><img class="partner-mark" src="${escapeHtml(asset(partner.logo))}" alt="" width="${partner.logoWidth}" height="${partner.logoHeight}"><span class="partner-name">${escapeHtml(partner.note)}</span></span></li>`;
-      }
-      if (partner.logo) {
-        return `<li><img class="partner-logo" src="${escapeHtml(asset(partner.logo))}" alt="${escapeHtml(partner.name)}" width="${partner.logoWidth}" height="${partner.logoHeight}"></li>`;
-      }
-      return `<li><span class="partner-name">${escapeHtml(partner.name)}</span></li>`;
-    })
-    .join("");
-
-  const body = `<section class="hero">
-      <img class="hero-globe" src="${asset("/art/globe-inked.svg")}" alt="">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <h1 class="hero-title" id="event-title">Hack Club</h1>
-          <p class="hero-sub">Innovation Galway <span class="x">×</span> ElevenLabs</p>
-          <p class="tagline"><span>${escapeHtml(EVENT.tagline)}</span></p>
-          <p class="lede">${escapeHtml(EVENT.line)} Ship it when the code is on GitHub and someone can open the project in a browser.</p>
-          <div class="actions">
-            <a class="button" href="/submit">Send in my project</a>
-          </div>
-        </div>
-        <div class="hero-art" aria-hidden="true">
-          <img class="hooker" src="${asset("/art/hooker-sticker.svg")}" alt="" width="720" height="600">
-          <img class="sticker sticker-age" src="${asset("/art/sticker-under19.svg")}" alt="" width="220" height="220">
-          <img class="note" src="${asset("/art/note-credits.svg")}" alt="" width="420" height="200">
-        </div>
-      </div>
-    </section>
-    <section class="section paper" id="challenge">
-      <div class="wrap brief">
-        <div class="brief-head">
-          <h2>${escapeHtml(EVENT.challenge)}</h2>
-          <img class="brief-art" src="${asset("/art/voice-bubble.svg")}" alt="" width="360" height="300">
-        </div>
-        <div class="prose">
-          <h3>Stuck for an idea? Steal one</h3>
-          <ul class="ideas">
-            <li>A study buddy that quizzes you out loud before the Leaving Cert.</li>
-            <li>An audio guide to Galway, told in the voices of the people who live here.</li>
-            <li>A game where the characters actually talk back.</li>
-            <li>A tool that helps someone who finds it hard to speak up in class.</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-    <section class="section" id="guides">
-      <div class="wrap split">
-        <h2>How to ship your project</h2>
-        <div>
-          <p class="guide-lead">Do this in order. The form needs the GitHub link and a page someone can open.</p>
-          <ol class="ship">
-            <li>
-              <span class="num">01</span>
-              <div>
-                <h3>Put the code on GitHub</h3>
-                <p><a href="https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository">Create a repository</a>, then <a href="https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github">push the project</a>. Open the repository and copy the address from the browser. It looks like <span class="url">https://github.com/you/your-project</span>. That address is the code URL.</p>
-              </div>
-            </li>
-            <li>
-              <span class="num">02</span>
-              <div>
-                <h3>Host it so it has a playable URL</h3>
-                <p>This link opens the project itself, not the GitHub page. A static site can use <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site">GitHub Pages</a>. Anything else can go on <a href="https://vercel.com/docs/getting-started-with-vercel">Vercel</a>. When the page loads, copy that address. That is the playable URL.</p>
-              </div>
-            </li>
-            <li>
-              <span class="num">03</span>
-              <div>
-                <h3>Write the README yourself</h3>
-                <p>Use your own words. Don't paste a generated README. Say what it does, how to run it, how you used ElevenLabs, and what you learned. If you need the API, start at the <a href="https://elevenlabs.io/docs/eleven-api/quickstart">ElevenLabs quickstart</a>.</p>
-              </div>
-            </li>
-            <li>
-              <span class="num">04</span>
-              <div>
-                <h3>The rest of the form</h3>
-                <p>Code URL from step 01. Playable URL from step 02. A screenshot: upload a picture of it running (PNG, JPEG, WebP, or GIF, up to 5 MB). A public image link works if you already hosted one. A short description of what you built. Team members: the names of everyone on it. Birthday and address are on the form too.</p>
-              </div>
-            </li>
-            <li>
-              <span class="num">05</span>
-              <div>
-                <h3>Send it in</h3>
-                <p><a class="button" href="/submit">Send in my project</a></p>
-              </div>
-            </li>
-          </ol>
-        </div>
-      </div>
-    </section>
-    <section class="section paper" id="partners">
-      <div class="wrap partners-block">
-        <h2>Made possible by</h2>
-        <ul class="partners">${partners}</ul>
-      </div>
-    </section>
-`;
-
-  return layout({
-    title: "Innovation Galway × ElevenLabs",
-    path: "/",
-    body,
-  });
-}
-
-function formShell({ path, title, lede, form }) {
-  return layout({
-    title,
-    path,
-    script: true,
-    body: `<div class="wrap form-page">
-      <div class="form-intro">
-        <h1>${escapeHtml(title)}</h1>
-        ${lede}
-        <img class="intro-art" src="${asset("/art/voice-bubble.svg")}" alt="" width="360" height="300">
-      </div>
-      ${form}
-    </div>`,
-  });
-}
-
 export function renderSubmit({ values, errors = [], formError = "" }) {
   const err = (field) => errorFor(errors, field);
   const addressOpen = ["address1", "address2", "city", "state", "country", "zip"].some(
@@ -311,35 +147,28 @@ export function renderSubmit({ values, errors = [], formError = "" }) {
     <button class="button" type="submit">Send in my project</button>
   </form>`;
 
-  return formShell({
-    path: "/submit",
-    title: "Submit a project",
-    lede: `<p>This saves your project for review. It is not sent to the YSWS table until an organiser approves it.</p>`,
-    form,
+  return layout({
+    title: "Innovation Galway × ElevenLabs",
+    script: true,
+    body: `<h1>Innovation Galway × ElevenLabs</h1>
+    ${form}`,
   });
 }
 
 export function renderSubmitThanks() {
   return layout({
     title: "Project submitted",
-    path: "/submit",
-    body: `<div class="wrap status-page">
-      <p class="kicker">Submit</p>
-      <h1>Project submitted.</h1>
-      <p class="lede">It's in the review list. An organiser will look at it before it goes to the YSWS table.</p>
-      <p><a href="/">Back to the event</a></p>
-    </div>`,
+    body: `<h1>Project submitted.</h1>
+      <p>It's in the review list. An organiser will look at it before it goes to the YSWS table.</p>
+      <p><a href="/submit">Back to the form</a></p>`,
   });
 }
 
-export function renderStatus({ title, heading, text, path = "/" }) {
+export function renderStatus({ title, heading, text }) {
   return layout({
     title,
-    path,
-    body: `<div class="wrap status-page">
-      <h1>${escapeHtml(heading)}</h1>
-      <p class="lede">${escapeHtml(text)}</p>
-      <p><a href="/">Back to the event</a></p>
-    </div>`,
+    body: `<h1>${escapeHtml(heading)}</h1>
+      <p>${escapeHtml(text)}</p>
+      <p><a href="/submit">Back to the form</a></p>`,
   });
 }

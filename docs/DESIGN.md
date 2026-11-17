@@ -1,5 +1,7 @@
 # Innovation Galway × ElevenLabs: design direction
 
+The public site is now only the event title and the project form. The notes below describe the earlier poster design and are not what the live page uses.
+
 Status: a proposal for build and preview only. Nothing is announced in any Slack, and nothing ships until Johnny OKs it.
 Base: PR #1, branch `cursor/innovation-galway-site-e14e` @ `0e025e5`. The patch changes only `src/render.js` (markup and copy), `public/styles.css`, `public/fonts/` and the new `public/art/`. Forms, field names, routes, validation, and the Airtable and Postgres code are unchanged. All 19 tests in `npm test` pass with the patch applied.
 

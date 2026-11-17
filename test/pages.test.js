@@ -70,36 +70,24 @@ test("public pages render the event and the forms", async () => {
 
     const home = await get("/");
     assert.equal(home.status, 200);
-    assert.match(home.html, /id="event-title">Hack Club</);
-    assert.match(home.html, /class="hero-sub">Innovation Galway/);
-    assert.match(home.html, /Innovation/);
-    assert.match(home.html, /Galway/);
-    assert.match(home.html, /ElevenLabs/);
-    assert.match(home.html, /Building for the youth/);
-    assert.match(home.html, /A hackathon for students, by students/);
-    assert.match(home.html, /How can technology create better opportunities and experiences for young people/);
-    assert.match(home.html, /How to ship your project/);
-    assert.match(home.html, /Write the README yourself/);
-    assert.match(home.html, /docs\.github\.com\/en\/repositories\/creating-and-managing-repositories\/creating-a-new-repository/);
-    assert.match(home.html, /adding-locally-hosted-code-to-github/);
-    assert.match(home.html, /creating-a-github-pages-site/);
-    assert.match(home.html, /vercel\.com\/docs\/getting-started-with-vercel/);
-    assert.match(home.html, /elevenlabs\.io\/docs\/eleven-api\/quickstart/);
-    assert.match(home.html, /PorterShed/);
-    assert.match(home.html, /Eve Kennedy/);
-    assert.match(home.html, /Cristian Rotariu/);
-    assert.match(home.html, /IdeasLab/);
-    assert.match(home.html, /Send in my project/);
-    assert.doesNotMatch(home.html, /Schedule TBA/);
-    assert.doesNotMatch(home.html, /Before you come/);
-    assert.doesNotMatch(home.html, /Find us at/);
+    assert.match(home.html, /<h1>Innovation Galway × ElevenLabs<\/h1>/);
+    assert.match(home.html, /action="\/submit"/);
+    assert.match(home.html, /enctype="multipart\/form-data"/);
+    assert.doesNotMatch(home.html, /<nav/);
+    assert.doesNotMatch(home.html, /<footer/);
+    assert.doesNotMatch(home.html, /flag-orpheus/);
+    assert.doesNotMatch(home.html, /How to ship your project/);
+    assert.doesNotMatch(home.html, /Made possible by/);
+    assert.doesNotMatch(home.html, /Building for the youth/);
     assert.doesNotMatch(home.html, /href="\/signup"/);
     assert.doesNotMatch(home.html, /sign up/i);
     assert.doesNotMatch(home.html, /slack/i);
+    assert.doesNotMatch(home.html, /\/admin/);
+    assert.doesNotMatch(home.html, /type="password"/);
 
     const signup = await fetch(`http://127.0.0.1:${port}/signup`, { redirect: "manual" });
     assert.equal(signup.status, 302);
-    assert.equal(new URL(signup.headers.get("location"), `http://127.0.0.1:${port}`).pathname, "/");
+    assert.equal(new URL(signup.headers.get("location"), `http://127.0.0.1:${port}`).pathname, "/submit");
 
     const signupPost = await fetch(`http://127.0.0.1:${port}/signup`, {
       method: "POST",
@@ -108,12 +96,16 @@ test("public pages render the event and the forms", async () => {
       body: "first_name=Niamh",
     });
     assert.equal(signupPost.status, 303);
-    assert.equal(new URL(signupPost.headers.get("location"), `http://127.0.0.1:${port}`).pathname, "/");
+    assert.equal(new URL(signupPost.headers.get("location"), `http://127.0.0.1:${port}`).pathname, "/submit");
+
+    const elsewhere = await fetch(`http://127.0.0.1:${port}/guides`, { redirect: "manual" });
+    assert.equal(elsewhere.status, 302);
+    assert.equal(new URL(elsewhere.headers.get("location"), `http://127.0.0.1:${port}`).pathname, "/submit");
 
     const submit = await get("/submit");
     assert.equal(submit.status, 200);
+    assert.match(submit.html, /<h1>Innovation Galway × ElevenLabs<\/h1>/);
     assert.match(submit.html, /action="\/submit"/);
-    assert.match(submit.html, /enctype="multipart\/form-data"/);
     for (const name of [
       "project_name",
       "birthday",
@@ -145,12 +137,11 @@ test("public pages render the event and the forms", async () => {
     assert.equal(rejected.status, 422);
     const rejectedHtml = await rejected.text();
     assert.match(rejectedHtml, /Enter a name/);
+    assert.match(rejectedHtml, /<h1>Innovation Galway × ElevenLabs<\/h1>/);
     assert.doesNotMatch(rejectedHtml, /sign up/i);
     assert.doesNotMatch(rejectedHtml, /slack/i);
+    assert.doesNotMatch(rejectedHtml, /type="password"/);
 
-    assert.doesNotMatch(home.html, /\/admin/);
-    assert.doesNotMatch(submit.html, /\/admin/);
-    assert.doesNotMatch(home.html, /type="password"/);
     for (const [method, route] of [
       ["GET", "/admin"],
       ["GET", "/admin/submissions/1"],
@@ -166,13 +157,12 @@ test("public pages render the event and the forms", async () => {
         body: method === "POST" ? "password=x&decision=approve" : undefined,
         redirect: "manual",
       });
-      assert.equal(res.status, 404, `${method} ${route}`);
-      const html = await res.text();
-      assert.doesNotMatch(html, /type="password"/);
+      assert.equal(res.status, method === "GET" ? 302 : 303, `${method} ${route}`);
+      assert.equal(new URL(res.headers.get("location"), `http://127.0.0.1:${port}`).pathname, "/submit");
     }
 
     assert.match(home.html, /styles\.css\?v=[0-9a-f]{12}/);
-    assert.match(home.html, /portershed-wordmark\.png\?v=[0-9a-f]{12}/);
+    assert.doesNotMatch(home.html, /\.png|\.svg|woff2/);
     const version = home.html.match(/styles\.css\?v=([0-9a-f]{12})/)[1];
 
     const css = await get("/styles.css");

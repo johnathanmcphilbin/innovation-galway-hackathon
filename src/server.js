@@ -4,12 +4,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { closePool, insertSubmission, isDbUnavailable, migrate } from "./db.js";
 import { createRateLimiter } from "./rate-limit.js";
-import {
-  renderHome,
-  renderStatus,
-  renderSubmit,
-  renderSubmitThanks,
-} from "./render.js";
+import { renderStatus, renderSubmit, renderSubmitThanks } from "./render.js";
 import { MAX_SCREENSHOT_BYTES, inspectScreenshot } from "./screenshot.js";
 import { emptySubmissionValues, validateSubmission } from "./validate.js";
 
@@ -71,28 +66,24 @@ function screenshotUpload(req, res, next) {
   });
 }
 
-function tooMany(res, { title, heading, text, path }) {
-  res.status(429).type("html").send(renderStatus({ title, heading, text, path }));
+function tooMany(res, { title, heading, text }) {
+  res.status(429).type("html").send(renderStatus({ title, heading, text }));
 }
 
 app.get("/health", (_req, res) => {
   res.type("text/plain").send("ok");
 });
 
-app.get("/", (_req, res) => {
-  res.type("html").send(renderHome());
+app.get(["/", "/submit"], (_req, res) => {
+  res.type("html").send(renderSubmit({ values: emptySubmissionValues() }));
 });
 
 app.get(["/signup", "/signup/thanks"], (_req, res) => {
-  res.redirect(302, "/");
+  res.redirect(302, "/submit");
 });
 
 app.post("/signup", (_req, res) => {
-  res.redirect(303, "/");
-});
-
-app.get("/submit", (_req, res) => {
-  res.type("html").send(renderSubmit({ values: emptySubmissionValues() }));
+  res.redirect(303, "/submit");
 });
 
 app.post(
@@ -104,7 +95,6 @@ app.post(
         title: "Slow down",
         heading: "Too many submissions from this connection",
         text: "Wait about ten minutes, then send the form again.",
-        path: "/submit",
       });
       return;
     }
@@ -147,14 +137,8 @@ app.get("/submit/thanks", (_req, res) => {
   res.type("html").send(renderSubmitThanks());
 });
 
-app.use((_req, res) => {
-  res.status(404).type("html").send(
-    renderStatus({
-      title: "Not found",
-      heading: "That page is not on the programme.",
-      text: "The project page and the submit form are the pages that exist.",
-    }),
-  );
+app.use((req, res) => {
+  res.redirect(req.method === "GET" || req.method === "HEAD" ? 302 : 303, "/submit");
 });
 
 app.use((error, _req, res, next) => {
