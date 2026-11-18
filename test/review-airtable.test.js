@@ -115,6 +115,16 @@ test("maps an approval onto the YSWS field names and nothing else", () => {
   assert.equal(Object.keys(fields).some((key) => key.startsWith("Loops")), false);
 });
 
+test("omits a null GitHub username and a null Hackatime id", () => {
+  const fields = buildApprovedAirtableFields(
+    reviewedRow({ githubUsername: null, justHackatimeId: null }),
+    { includeScreenshotUrl: true },
+  );
+  assert.equal("GitHub Username" in fields, false);
+  assert.equal("Justification - Submitter Hackatime ID" in fields, false);
+  assert.equal(fields["First Name"], "Cristian");
+});
+
 test("omits a screenshot attachment when the file will be uploaded separately", () => {
   const fields = buildApprovedAirtableFields(reviewedRow({ justLapseLinks: "  ", justHackatimeId: "" }), {
     includeScreenshotUrl: false,

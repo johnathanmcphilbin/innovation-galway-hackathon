@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ageOn, validateSignup, validateSubmission } from "../src/validate.js";
+import { ageOn, validateAdminAction, validateSignup, validateSubmission } from "../src/validate.js";
 
 const adult = {
   first_name: "Niamh",
@@ -86,7 +86,6 @@ const project = {
   last_name: "Rotariu",
   email: "Cristian@Example.com",
   birthday: "2008-04-02",
-  github_username: "@cristian",
   code_url: "https://github.com/cristian/project",
   playable_url: "https://project.example.com/demo",
   screenshot_url: "https://images.example.com/shot.png",
@@ -97,20 +96,50 @@ const project = {
   how_heard: "A teacher",
   doing_well: "The brief is clear.",
   improve: "Publish the schedule sooner.",
-  address1: "",
+  address1: "15 Market St",
+  address2: "",
   city: "Galway",
+  state: "",
+  country: "Ireland",
+  zip: "H91 TCX3",
 };
 
-test("accepts a project submission and keeps optional address empty", () => {
-  const result = validateSubmission(project);
+test("accepts a project submission and keeps optional address lines empty", () => {
+  const result = validateSubmission({
+    ...project,
+    github_username: "@cristian",
+    hackatime_id: "hack_123",
+  });
   assert.equal(result.ok, true, JSON.stringify(result.errors));
   assert.equal(result.value.email, "cristian@example.com");
-  assert.equal(result.value.githubUsername, "cristian");
-  assert.equal(result.value.projectName, "project");
+  assert.equal(result.value.githubUsername, null);
   assert.equal(result.value.hackatimeId, null);
-  assert.equal(result.value.address1, null);
+  assert.equal(result.value.projectName, "project");
+  assert.equal(result.value.address1, "15 Market St");
+  assert.equal(result.value.address2, null);
   assert.equal(result.value.city, "Galway");
+  assert.equal(result.value.state, null);
+  assert.equal(result.value.country, "Ireland");
+  assert.equal(result.value.zip, "H91 TCX3");
   assert.equal(result.value.birthday, "2008-04-02");
+});
+
+test("requires address line 1, city, country, and ZIP or postcode", () => {
+  const result = validateSubmission({
+    ...project,
+    address1: " ",
+    city: "",
+    country: "",
+    zip: "",
+  });
+  assert.equal(result.ok, false);
+  const fields = result.errors.map((error) => error.field);
+  assert.ok(fields.includes("address1"));
+  assert.ok(fields.includes("city"));
+  assert.ok(fields.includes("country"));
+  assert.ok(fields.includes("zip"));
+  assert.equal(fields.includes("address2"), false);
+  assert.equal(fields.includes("state"), false);
 });
 
 test("accepts an uploaded screenshot without a screenshot URL", () => {
@@ -125,13 +154,32 @@ test("requires a screenshot file or a public screenshot URL", () => {
   assert.ok(result.errors.some((error) => error.field === "screenshot"));
 });
 
-test("reads a GitHub profile URL as a username", () => {
+test("ignores a GitHub profile URL because the form does not ask for one", () => {
   const result = validateSubmission({
     ...project,
     github_username: "https://github.com/EveKen/",
   });
   assert.equal(result.ok, true, JSON.stringify(result.errors));
-  assert.equal(result.value.githubUsername, "EveKen");
+  assert.equal(result.value.githubUsername, null);
+});
+
+test("approve can omit the note, and hours are required only when sending to the YSWS table", () => {
+  const plain = validateAdminAction({ decision: "approve", note: "  " });
+  assert.equal(plain.ok, true, JSON.stringify(plain.errors));
+  assert.equal(plain.note, null);
+  assert.equal(plain.approvedHours, null);
+
+  const needsHours = validateAdminAction({ decision: "approve" }, { requireHours: true });
+  assert.equal(needsHours.ok, false);
+  assert.equal(needsHours.errors[0].field, "approved_hours");
+
+  const withHours = validateAdminAction(
+    { decision: "reject", note: "Not finished yet.", approved_hours: "" },
+    { requireHours: true },
+  );
+  assert.equal(withHours.ok, true, JSON.stringify(withHours.errors));
+  assert.equal(withHours.decision, "reject");
+  assert.equal(withHours.note, "Not finished yet.");
 });
 
 test("rejects submission links that are not public http(s) urls", () => {

@@ -30,8 +30,9 @@ const SCHEMA = [
     last_name TEXT NOT NULL,
     email TEXT NOT NULL,
     birthday DATE NOT NULL,
-    github_username TEXT NOT NULL,
+    github_username TEXT,
     hackatime_id TEXT,
+    hackclub_id TEXT,
     code_url TEXT NOT NULL,
     playable_url TEXT NOT NULL,
     screenshot_url TEXT,
@@ -69,6 +70,8 @@ const SCHEMA = [
     airtable_error TEXT,
     CONSTRAINT submissions_status_check CHECK (status IN ('pending', 'approved', 'rejected'))
   )`,
+  `ALTER TABLE submissions ALTER COLUMN github_username DROP NOT NULL`,
+  `ALTER TABLE submissions ADD COLUMN IF NOT EXISTS hackclub_id TEXT`,
   `CREATE INDEX IF NOT EXISTS submissions_status_created_idx ON submissions (status, created_at DESC)`,
 ];
 
@@ -212,8 +215,9 @@ export async function listSignups() {
 
 const SUBMISSION_COLUMNS = `
   id, status, project_name, first_name, last_name, email, birthday,
-  github_username, hackatime_id, code_url, playable_url, screenshot_url,
+  github_username, hackatime_id, hackclub_id, code_url, playable_url, screenshot_url,
   screenshot_content_type, screenshot_filename, screenshot_uploaded,
+  (screenshot_bytes IS NOT NULL) AS has_screenshot,
   description, team_members, elevenlabs_use, youth_impact,
   how_heard, doing_well, improve,
   address1, address2, city, state, country, zip,
@@ -235,6 +239,8 @@ function mapSubmission(row, { includeBytes = false } = {}) {
     birthday: row.birthday,
     githubUsername: row.github_username,
     hackatimeId: row.hackatime_id,
+    hackclubId: row.hackclub_id,
+    hasScreenshot: Boolean(row.has_screenshot),
     codeUrl: row.code_url,
     playableUrl: row.playable_url,
     screenshotUrl: row.screenshot_url,
@@ -282,9 +288,9 @@ export async function insertSubmission(submission, screenshot = null) {
       screenshot_bytes, screenshot_content_type, screenshot_filename,
       description, team_members, elevenlabs_use, youth_impact,
       how_heard, doing_well, improve,
-      address1, address2, city, state, country, zip
+      address1, address2, city, state, country, zip, hackclub_id
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27
     ) RETURNING id`,
     [
       submission.projectName,
@@ -313,6 +319,7 @@ export async function insertSubmission(submission, screenshot = null) {
       submission.state,
       submission.country,
       submission.zip,
+      submission.hackclubId || null,
     ],
   );
   return Number(result.rows[0].id);
@@ -366,6 +373,22 @@ export async function getScreenshot(id) {
     contentType: row.screenshot_content_type,
     filename: row.screenshot_filename,
   };
+}
+
+export async function reviewSubmission(id, { status, reviewerName, note, approvedHours }) {
+  const active = await requirePool();
+  const result = await active.query(
+    `UPDATE submissions SET
+      status = $2,
+      reviewer_name = $3,
+      reviewer_feedback = $4,
+      approved_hours = $5,
+      reviewed_at = NOW()
+     WHERE id = $1 AND status = 'pending'
+     RETURNING id`,
+    [id, status, reviewerName, note, approvedHours],
+  );
+  return result.rowCount > 0;
 }
 
 export async function deleteSubmission(id) {

@@ -48,7 +48,6 @@ test("maps a submission onto the YSWS fields and nothing else", () => {
     "Description",
     "Email",
     "First Name",
-    "GitHub Username",
     "How can we improve?",
     "How did you hear about this?",
     "Justification - Additional Justification",
@@ -82,26 +81,13 @@ test("maps a submission onto the YSWS fields and nothing else", () => {
   );
 });
 
-test("omits every address field when the student skips them", () => {
-  const fields = fieldsFrom({
-    ...project,
-    address1: "",
-    address2: "",
-    city: "",
-    state: "",
-    country: "",
-    zip: "",
-  });
-  for (const key of [
-    "Address (Line 1)",
-    "Address (Line 2)",
-    "City",
-    "State / Province",
-    "Country",
-    "ZIP / Postal Code",
-  ]) {
-    assert.equal(key in fields, false);
-  }
+test("omits blank optional address lines", () => {
+  const fields = fieldsFrom({ ...project, address2: "   ", state: "" });
+  assert.equal(fields["Address (Line 1)"], "15 Market St");
+  assert.equal(fields["Address (Line 2)"], undefined);
+  assert.equal(fields["State / Province"], undefined);
+  assert.equal(fields.City, "Galway");
+  assert.equal("GitHub Username" in fields, false);
 });
 
 test("posts only the allowed record to the named table", async () => {

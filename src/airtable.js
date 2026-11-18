@@ -96,7 +96,6 @@ function participantFields(submission, { includeScreenshotUrl }) {
     "Last Name": submission.lastName,
     Email: submission.email,
     Description: submission.description,
-    "GitHub Username": submission.githubUsername,
     Birthday: submission.birthday,
     "How did you hear about this?": submission.howHeard,
     "What are we doing well?": submission.doingWell,
@@ -104,6 +103,7 @@ function participantFields(submission, { includeScreenshotUrl }) {
     "Justification - Additional Justification": formatJustification(submission),
     ...addressFields(submission),
   };
+  putText(fields, "GitHub Username", submission.githubUsername);
   if (includeScreenshotUrl && submission.screenshotUrl) {
     fields.Screenshot = [{ url: submission.screenshotUrl }];
   }
@@ -118,6 +118,10 @@ export function buildAirtableFields(submission) {
 
 function putText(fields, key, value) {
   if (typeof value === "string" && value.trim()) fields[key] = value.trim();
+}
+
+export function airtableSyncEnabled(env = process.env) {
+  return String(env.SYNC_APPROVED_TO_AIRTABLE || "").trim().toLowerCase() === "true";
 }
 
 export function buildApprovedAirtableFields(row, { includeScreenshotUrl = true } = {}) {

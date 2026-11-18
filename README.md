@@ -2,16 +2,20 @@
 
 Site for the student hackathon at PorterShed, Galway, on Saturday 21 November 2026, 10am–6pm.
 
-Project submissions are saved in Postgres. The site has no admin area and no login. Review happens outside the site. The Airtable helpers in `src/airtable.js` are kept but no public route calls them. The site does not take sign-ups. There is no Slack integration.
+Project submissions are saved in Postgres. Teens sign in with Hack Club Auth before the form. There is no GitHub username field and no Hackatime ID field. Organisers review at `/admin`. The Airtable helper in `src/airtable.js` runs only when an organiser approves and `SYNC_APPROVED_TO_AIRTABLE=true`. The old sign-up form is not used. There is no Slack integration.
 
 ## Stack
 
-Node 22, Express, server-rendered HTML, and `pg`. One process. `npm start` listens on `PORT` (default 3000). On boot, if `DATABASE_URL` is set, the app runs an idempotent migration (`CREATE TABLE IF NOT EXISTS` for the old `signups` table and for `submissions`).
+Node 22, Express, server-rendered HTML, and `pg`. One process. `npm start` listens on `PORT` (default 3000). On boot, if `DATABASE_URL` is set, the app runs an idempotent migration (`CREATE TABLE IF NOT EXISTS` for the old `signups` table and for `submissions`, then `ALTER TABLE submissions ALTER COLUMN github_username DROP NOT NULL` and `ADD COLUMN IF NOT EXISTS hackclub_id`).
 
 ## Pages
 
-- `/` and `/submit` are the same page: the event title and the project form. Screenshot upload or a public image URL. The project is saved in Postgres.
-- Any other public path redirects to `/submit`. `/submit/thanks` is the success page.
+- `/` and `/submit` ask the teen to sign in with Hack Club, then show the project form. Screenshot upload or a public image URL. The project is saved in Postgres with their Hack Club id.
+- `/auth/login` sends the browser to Hack Club Auth. Someone without an account makes one on that same flow.
+- `/auth/callback` is the OAuth redirect URI.
+- `/submit/thanks` confirms the project was saved and that an organiser will review it.
+- `/admin` lists submissions for organisers. Anyone else is sent to sign in, or gets 403.
+- Any other public path redirects to `/submit`.
 
 ## Environment
 
@@ -24,10 +28,23 @@ Copy `.env.example` to `.env` for local development.
 | `AIRTABLE_BASE_ID` | `appInkJZdtOT67t8l` |
 | `AIRTABLE_TABLE` | `YSWS Project Submission` (table id `tbloBMHxgUSH9zrkg`) |
 | `PORT` | Set by Orchard. Local default is `3000`. |
+| `HCA_CLIENT_ID` | Hack Club Auth client id. |
+| `HCA_CLIENT_SECRET` | Hack Club Auth client secret. |
+| `HCA_REDIRECT_URI` | Must match a redirect URI on the Hack Club Auth app exactly. Production: `https://galway.hackclub.com/auth/callback`. |
+| `SESSION_SECRET` | Signs the session cookie. Falls back to `HCA_CLIENT_SECRET` when unset. |
+| `ADMIN_EMAILS` | Extra organiser emails, comma-separated. `johnny@hackclub.com` is always an organiser. |
+| `SYNC_APPROVED_TO_AIRTABLE` | Set to `true` to send an approval to the YSWS table. Off when unset. |
+| `HCA_SCOPES` | Optional. Default is `openid profile email name birthdate address`. |
 
-`/submit` does not call Airtable. It stores the form, and any uploaded screenshot (PNG, JPEG, WebP, or GIF, 5 MB, checked by magic bytes, memory only), in `submissions` with status `pending`. No route on the site reads submissions back out, shows a screenshot, or writes to Airtable. Any `/admin` path returns 404.
+`/submit` does not call Airtable. It stores the form, and any uploaded screenshot (PNG, JPEG, WebP, or GIF, 5 MB, checked by magic bytes, memory only), in `submissions` with status `pending`. `/admin` is the only page that reads submissions back. It writes to Airtable only when `SYNC_APPROVED_TO_AIRTABLE=true`.
 
-Address fields are omitted when the student leaves them blank. Birthday is required. A project name is optional; the review form prefills it from the name they typed, or from the GitHub repository name.
+Address line 1, city, country, and ZIP or postcode are required. Address line 2 and state or province are optional. Birthday is required. A project name is optional; a blank one uses the name from the code link. Name, email, birthday, and address are filled from Hack Club Auth when those claims are present, and the teen can edit them.
+
+Register this redirect URI on the Hack Club Auth app, character for character:
+
+`https://galway.hackclub.com/auth/callback`
+
+The sign-in request asks for `openid profile email name birthdate address`. Birthday and address are HQ-only scopes, so the app needs the `hq_official` trust level. A community app that cannot request those scopes will be rejected by Hack Club Auth until `HCA_SCOPES` is narrowed.
 
 On approve, the writer sends these fields and no others:
 
