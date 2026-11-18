@@ -290,9 +290,7 @@ export function emptySubmissionValues() {
     last_name: "",
     email: "",
     birthday: "",
-    github_username: "",
     project_name: "",
-    hackatime_id: "",
     code_url: "",
     playable_url: "",
     screenshot_url: "",
@@ -310,6 +308,22 @@ export function emptySubmissionValues() {
     country: "",
     zip: "",
   };
+}
+
+export function prefillFromSession(session) {
+  const values = emptySubmissionValues();
+  if (!session) return values;
+  values.first_name = session.givenName || "";
+  values.last_name = session.familyName || "";
+  values.email = session.email || "";
+  values.birthday = session.birthdate || "";
+  values.address1 = session.address1 || "";
+  values.address2 = session.address2 || "";
+  values.city = session.city || "";
+  values.state = session.state || "";
+  values.country = session.country || "";
+  values.zip = session.zip || "";
+  return values;
 }
 
 function derivedProjectName(codeUrl) {
@@ -339,27 +353,12 @@ export function validateSubmission(input, { hasScreenshot = false } = {}) {
     errors.push({ field: "birthday", message: "Enter a real birthday as YYYY-MM-DD." });
   }
 
-  const github = parseGithubUsername(src.github_username);
-  if (!github) {
-    errors.push({
-      field: "github_username",
-      message: "Enter a GitHub username, like octocat.",
-    });
-  }
-
   const projectNameResult = cleanShortText(src.project_name, {
     max: 120,
     required: false,
     label: "the project name",
   });
   if (projectNameResult.error) errors.push({ field: "project_name", message: projectNameResult.error });
-
-  const hackatimeResult = cleanShortText(src.hackatime_id, {
-    max: 80,
-    required: false,
-    label: "the Hackatime ID",
-  });
-  if (hackatimeResult.error) errors.push({ field: "hackatime_id", message: hackatimeResult.error });
 
   const codeUrl = parseHttpUrl(src.code_url);
   if (!codeUrl) errors.push({ field: "code_url", message: "Enter an http(s) link to the code." });
@@ -421,16 +420,16 @@ export function validateSubmission(input, { hasScreenshot = false } = {}) {
   );
 
   const address = {};
-  for (const [field, label] of [
-    ["address1", "Address line 1"],
-    ["address2", "Address line 2"],
-    ["city", "City"],
-    ["state", "State or province"],
-    ["country", "Country"],
-    ["zip", "Postcode"],
+  for (const [field, label, required, missing] of [
+    ["address1", "address line 1", true, "Enter address line 1."],
+    ["address2", "address line 2", false, ""],
+    ["city", "a city", true, "Enter a city."],
+    ["state", "a state or province", false, ""],
+    ["country", "a country", true, "Enter a country."],
+    ["zip", "a ZIP or postcode", true, "Enter a ZIP or postcode."],
   ]) {
     address[field] = take(
-      cleanShortText(src[field], { max: 120, required: false, label }),
+      cleanShortText(src[field], { max: 120, required, missing, label }),
       errors,
       field,
     );
@@ -453,8 +452,8 @@ export function validateSubmission(input, { hasScreenshot = false } = {}) {
           email: emailResult.value,
           birthday,
           projectName: projectNameResult.value || derivedProjectName(codeUrl),
-          hackatimeId: hackatimeResult.value,
-          githubUsername: github,
+          hackatimeId: null,
+          githubUsername: null,
           codeUrl,
           playableUrl,
           screenshotUrl,
@@ -494,6 +493,38 @@ function parseHours(raw) {
   const hours = Number(value);
   if (hours > 200) return { error: "Enter 200 hours or fewer." };
   return { value: hours };
+}
+
+export function validateAdminAction(input, { requireHours = false } = {}) {
+  const src = input && typeof input === "object" ? input : {};
+  const errors = [];
+  const decision = asString(src.decision).trim();
+  if (decision !== "approve" && decision !== "reject") {
+    errors.push({ field: "decision", message: "Choose approve or reject." });
+  }
+  const noteResult = cleanOptionalMultiline(src.note, { max: 2000, label: "Note" });
+  if (noteResult.error) errors.push({ field: "note", message: noteResult.error });
+
+  let approvedHours = null;
+  const hoursRaw = asString(src.approved_hours).trim();
+  if (hoursRaw) {
+    const parsed = parseHours(hoursRaw);
+    if (parsed.error) errors.push({ field: "approved_hours", message: parsed.error });
+    else approvedHours = parsed.value;
+  } else if (requireHours && decision === "approve") {
+    errors.push({
+      field: "approved_hours",
+      message: "Enter approved hours to send this to the YSWS table.",
+    });
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    decision,
+    note: noteResult.value ? noteResult.value : null,
+    approvedHours,
+  };
 }
 
 export function emptyReviewValues(fallback = {}) {

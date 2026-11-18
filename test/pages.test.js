@@ -2,9 +2,26 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { signSession, sessionSecret } from "../src/auth.js";
 import { signupsToCsv } from "../src/csv.js";
 import { poolConfig } from "../src/db.js";
 import { app } from "../src/server.js";
+
+process.env.SESSION_SECRET = "test-session-secret";
+
+const teen = {
+  sub: "ident!teen",
+  email: "cristian@example.com",
+  givenName: "Cristian",
+  familyName: "Rotariu",
+  birthdate: "2008-04-02",
+  address1: "15 Market St",
+  address2: "",
+  city: "Galway",
+  state: "",
+  country: "Ireland",
+  zip: "H91 TCX3",
+};
 
 test("remote postgres uses ssl and drops sslmode from the url", () => {
   const config = poolConfig("postgres://user:secret@db.internal:5432/app?sslmode=require");
@@ -50,7 +67,12 @@ test("submissions do not look up a sign-up, and the table migration stays", () =
   assert.equal(server.includes("insertSignup"), false);
   assert.equal(server.toLowerCase().includes("slack"), false);
   assert.match(db, /CREATE TABLE IF NOT EXISTS signups/);
+  assert.match(db, /ALTER TABLE submissions ALTER COLUMN github_username DROP NOT NULL/);
+  assert.match(db, /ADD COLUMN IF NOT EXISTS hackclub_id/);
   assert.doesNotMatch(db, /DROP TABLE/i);
+  const serverSource = readFileSync(new URL("../src/server.js", import.meta.url), "utf8");
+  assert.match(serverSource, /We couldn't save the project\. Try again\./);
+  assert.doesNotMatch(serverSource, /Nothing was sent to Airtable/);
 });
 
 test("public pages render the event and the forms", async () => {
@@ -71,8 +93,11 @@ test("public pages render the event and the forms", async () => {
     const home = await get("/");
     assert.equal(home.status, 200);
     assert.match(home.html, /<h1>Innovation Galway × ElevenLabs<\/h1>/);
-    assert.match(home.html, /action="\/submit"/);
-    assert.match(home.html, /enctype="multipart\/form-data"/);
+    assert.match(home.html, /href="\/auth\/login"/);
+    assert.match(home.html, /No Hack Club account\? It takes a minute, you'll make one as you sign in\./);
+    assert.doesNotMatch(home.html, /action="\/submit"/);
+    assert.doesNotMatch(home.html, /github_username|hackatime_id/);
+    assert.doesNotMatch(home.html, /<details/);
     assert.doesNotMatch(home.html, /<nav/);
     assert.doesNotMatch(home.html, /<footer/);
     assert.doesNotMatch(home.html, /flag-orpheus/);
@@ -102,20 +127,35 @@ test("public pages render the event and the forms", async () => {
     assert.equal(elsewhere.status, 302);
     assert.equal(new URL(elsewhere.headers.get("location"), `http://127.0.0.1:${port}`).pathname, "/submit");
 
-    const submit = await get("/submit");
+    const submit = await fetch(`http://127.0.0.1:${port}/submit`, {
+      headers: { cookie: `ig_session=${signSession(teen, sessionSecret())}` },
+    });
     assert.equal(submit.status, 200);
-    assert.match(submit.html, /<h1>Innovation Galway × ElevenLabs<\/h1>/);
-    assert.match(submit.html, /action="\/submit"/);
+    const submitHtml = await submit.text();
+    assert.match(submitHtml, /<h1>Innovation Galway × ElevenLabs<\/h1>/);
+    assert.match(submitHtml, /action="\/submit"/);
+    assert.match(submitHtml, /enctype="multipart\/form-data"/);
+    assert.match(submitHtml, /value="Cristian"/);
+    assert.match(submitHtml, /value="2008-04-02"/);
+    assert.match(submitHtml, /value="15 Market St"/);
+    for (const name of ["address1", "city", "country", "zip"]) {
+      assert.match(submitHtml, new RegExp(`name="${name}" required`));
+    }
+    assert.match(submitHtml, /name="address2"/);
+    assert.match(submitHtml, /name="state"/);
+    assert.doesNotMatch(submitHtml, /name="address2" required/);
+    assert.doesNotMatch(submitHtml, /name="state" required/);
+    assert.doesNotMatch(submitHtml, /github_username|hackatime_id/);
+    assert.doesNotMatch(submitHtml, /<details|Address, if you want/);
+    assert.doesNotMatch(submitHtml, /\/admin/);
     for (const name of [
       "project_name",
       "birthday",
-      "hackatime_id",
       "code_url",
       "playable_url",
       "screenshot",
       "screenshot_url",
       "description",
-      "github_username",
       "team_members",
       "elevenlabs_use",
       "youth_impact",
@@ -126,12 +166,29 @@ test("public pages render the event and the forms", async () => {
       "country",
       "zip",
     ]) {
-      assert.match(submit.html, new RegExp(`name="${name}"`));
+      assert.match(submitHtml, new RegExp(`name="${name}"`));
     }
+
+    const thanks = await get("/submit/thanks");
+    assert.equal(thanks.status, 200);
+    assert.match(thanks.html, /Thanks! We've got it\. An organiser will review it\./);
+    assert.doesNotMatch(thanks.html, /review list|YSWS/);
+
+    const loggedOutPost = await fetch(`http://127.0.0.1:${port}/submit`, {
+      method: "POST",
+      redirect: "manual",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "first_name=Cristian",
+    });
+    assert.equal(loggedOutPost.status, 303);
+    assert.equal(new URL(loggedOutPost.headers.get("location"), `http://127.0.0.1:${port}`).pathname, "/auth/login");
 
     const rejected = await fetch(`http://127.0.0.1:${port}/submit`, {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        cookie: `ig_session=${signSession(teen, sessionSecret())}`,
+      },
       body: "first_name=",
     });
     assert.equal(rejected.status, 422);
@@ -158,7 +215,10 @@ test("public pages render the event and the forms", async () => {
         redirect: "manual",
       });
       assert.equal(res.status, method === "GET" ? 302 : 303, `${method} ${route}`);
-      assert.equal(new URL(res.headers.get("location"), `http://127.0.0.1:${port}`).pathname, "/submit");
+      const location = new URL(res.headers.get("location"), `http://127.0.0.1:${port}`);
+      assert.equal(location.pathname, "/auth/login", `${method} ${route}`);
+      assert.equal(location.searchParams.get("next"), "/admin");
+      assert.doesNotMatch(await res.text(), /Voice guide|cristian@example.com/);
     }
 
     assert.match(home.html, /styles\.css\?v=[0-9a-f]{12}/);
